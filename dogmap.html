@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-touch-fullscreen" content="yes" />
+<style type="text/css">
+  html { width:100%; height: 100% }
+  body { width:100%; height: 100%; margin: 0px; padding: 0px }
+  div#mapcanv {width:200px; height:200px}
+</style>
+<script type="text/javascript"
+    src="http://maps.google.com/maps/api/js?sensor=false">
+</script>
+<script type="text/javascript">
+var la=44.5,lo=-83.2,cntr,map,zm=11
+var wd,ht,mp,mrk,xh,gps
+var r2d=Math.PI/180
+function setup() {
+    window.scrollTo(0,1)
+    wd = window.innerWidth
+    ht = window.innerHeight
+    mp = document.getElementById("mapcanv")
+    mp.style.width = wd + "px"
+    mp.style.height = ht + "px"
+    cntr = new google.maps.LatLng(la,lo)
+    var opts = { zoom: zm, center: cntr, mapTypeId: google.maps.MapTypeId.ROADMAP,
+                 scaleControl:true, streetViewControl:false, navigationControl:true,
+                 navigationControlOptions: { style: google.maps.NavigationControlStyle.SMALL,
+                                             position: google.maps.ControlPosition.TOP_LEFT } }
+    map = new google.maps.Map(document.getElementById("mapcanv"), opts)
+    mrk = new google.maps.Marker({position:cntr,map:map})
+    var mrkopt = {flat:true}
+    mrk.setOptions(mrkopt)
+    var traff = new google.maps.TrafficLayer()
+    traff.setMap(map)
+    xh=new XMLHttpRequest()
+    moveto()
+    setInterval(moveto,5000)
+    window.scrollTo(0,1)
+    setTimeout(nosb,1000)
+}
+
+function nosb() {
+    window.scrollTo(0,1)
+}
+
+var stale = 999999999
+
+function moveto() {
+    xh.open( "GET", "x.json ", false)
+    xh.send()
+    gps = eval('(' + xh.responseText + ')', null)
+    var mrkopt = {visible:false}
+    if( gps.mode < 1.5 ) {
+      mrk.setOptions(mrkopt)
+      return
+    }
+    var mrkopt = {visible:true}
+    mrk.setOptions(mrkopt)
+    cntr = new google.maps.LatLng(gps.lat,gps.lon)
+    if( stale++ > 12 ) {
+      map.setCenter(cntr)
+      stale = 0
+    }
+    mrk.setPosition(cntr)
+}
+
+</script>
+
+</head>
+<body onload="setup()">
+<div id="mapcanv" style="width:360px; height:360px; opacity:1; position:absolute"></div>
+</body>
+</html>

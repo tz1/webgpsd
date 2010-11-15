@@ -1,0 +1,31 @@
+WebGPSD is an update to minigpsd.  It still logs to KML files, but now takes multiple NMEA sources (via the python scripts and picks the best one), multiple annotation sources (like for my motorcycle data) all using one or two listen sockets, e.g. http://localhost:2947 or http://192.168.0.99:8888.  Satellite status as web page using json updates.
+
+Version 0.1pre.  Released under GPLv3.
+
+WebGPSD - current programs
+
+gps source scripts
+    btgpsrc.py  <bluetoothaddr> [pin] # pin defaults to zero
+    devgpsrc.py /dev/ttyUSBn # read from ttyUSBn
+    devgpsrc.py /dev/ttyACMn
+    devgpsrc.py # stdin
+    playback.py <list of kmz or kml files written by webgps>
+
+web page templates:
+    dogmap.html
+    satstat.html
+    html2head # convert to header script
+
+webgpsd build files:
+    webgpsd.c
+    gpsdata.c
+    web.c
+    webgpsd.h
+    Makefile
+
+compress generated kml to kmz using gzip (put binary in /usr/bin):
+    kml2kmz.c
+
+Harley j1850 decode:
+    harley.c (not used yet)
+

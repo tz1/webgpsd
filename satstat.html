@@ -1,0 +1,131 @@
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <style>html {margin:0px;padding:0px;border:0px }</style>
+    <style>body {margin:0px;padding:0px;border:0px }</style>
+    <script type="text/javascript">
+var canv,rq,xh,wd,ht
+var pi2 = Math.PI*2
+var r2d = pi2/360
+function dodraw() {
+    var elem = document.getElementById('myCanvas')
+    canv = elem.getContext('2d')
+    wd = window.innerWidth
+    ht = window.innerHeight
+    canv.canvas.width = wd
+    canv.canvas.height = ht
+    canv.fillStyle = '#000'
+    canv.fillRect(0,0, wd,ht)
+    xh=new XMLHttpRequest()
+    setInterval(update, 500)
+}
+
+function update() {
+    if( wd != window.innerWidth ||
+        ht != window.innerHeight ) {
+        wd = window.innerWidth
+        ht = window.innerHeight
+        canv.canvas.width = wd
+        canv.canvas.height = ht
+        canv.clearRect(0,0,wd,ht)
+        canv.fillStyle = '#000'
+        canv.fillRect(0, 0, wd,ht)
+    }
+    xh.open("GET","x.json", false)
+    xh.send()
+    gps = eval('('+xh.responseText+')', null)
+        canv.fillStyle = '#000'
+    canv.fillRect(0,0,220,220) // extra wide for sig stren squares
+    canv.lineWidth = 1
+
+    if( gps.mode < 1.5 )
+      canv.strokeStyle = '#666'
+    else if( gps.mode > 2.5 )
+      canv.strokeStyle = '#080'
+    else
+      canv.strokeStyle = '#880'
+
+    canv.beginPath()
+    canv.moveTo(190,100)
+    canv.arc(100,100,90,0,pi2,true)
+    canv.stroke()
+
+    canv.strokeStyle = '#666'
+    canv.beginPath()
+    canv.moveTo(160,100)
+    canv.arc(100,100,60,0,pi2,true)
+    canv.moveTo(130,100)
+    canv.arc(100,100,30,0,pi2,true)
+    canv.moveTo(10,100)
+    canv.lineTo(190,100)
+    canv.moveTo(100,10)
+    canv.lineTo(100,190)
+    canv.moveTo(100+77,100+45)
+    canv.lineTo(100-77,100-45)
+    canv.moveTo(100-77,100+45)
+    canv.lineTo(100+77,100-45)
+    canv.moveTo(100+45,100+77)
+    canv.lineTo(100-45,100-77)
+    canv.moveTo(100+45,100-77)
+    canv.lineTo(100-45,100+77)
+    canv.stroke()
+
+    canv.fillStyle = '#f00'
+    for( i = 0 ; i < gps.ns; i++ ) {
+        az = r2d * gps.az[i]
+        el = 90 - gps.el[i]
+        x = 100+el*Math.sin(az)
+        y = 100-el*Math.cos(az)
+        s = gps.sn[i]
+        canv.strokeStyle = '#fff'
+        canv.strokeRect(x-s/2,y-s/2,s,s)
+        if( gps.u[i] )
+            canv.fillStyle = '#0f0'
+        else
+            canv.fillStyle = '#f00'
+        canv.fillText(gps.n[i], x-3,y+4)
+    }
+    if( gps.sp > 3 ) {
+        az = r2d * gps.track
+        el = gps.speed
+
+        x = 100+90*Math.sin(az)
+        y = 100-90*Math.cos(az)
+        canv.strokeStyle = '#f00'
+        canv.beginPath()
+        canv.moveTo(100,100)
+        canv.lineTo(x,y)
+        canv.stroke()
+
+        x = 100+el*Math.sin(az)
+        y = 100-el*Math.cos(az)
+        canv.strokeStyle = '#0ff'
+        canv.lineWidth = 3
+        canv.beginPath()
+        canv.moveTo(100,100)
+        canv.lineTo(x,y)
+        canv.stroke()
+    }
+    canv.lineWidth = 1
+    rd = gps.pdop * 10
+    if( rd <= 90 ) {
+        canv.strokeStyle = '#f0f'
+        //canv.strokeRect(100-rd,100-rd,rd+rd,rd+rd)
+
+        canv.beginPath()
+        canv.moveTo(100+rd,100)
+        canv.arc(100,100,rd,0,pi2,true)
+        canv.stroke()
+    }
+
+}
+</script>
+  </head>
+  <body onload="dodraw()">
+    <div width: 100%; height: 100%; margin: 0px>
+      <a href=/><canvas id="myCanvas">No Canvas.</a>
+    </div>
+  </body>
+</html>

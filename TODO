@@ -1,0 +1,22 @@
+Config / comline:
+        Listen ports as array
+        chdir for logfiles
+        err log?
+
+Sources:
+        python connect/send script (looped?) launcher
+        serial port termios?
+
+Harley/OBD:
+        reintegrate or split to harleyd
+        revive miniobdd
+
+Web:
+        per-source status display?
+        return array of sources?
+
+GPSD:
+        move to json commands (?)
+
+Misc:
+        Eat other HTTP commands (POST, HEAD, PUT, DELETE, OPTION, etc. rfc 2616)

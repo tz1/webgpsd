@@ -1,0 +1,5 @@
+#!/bin/sh
+echo static char $1[] = >$1.h
+sed -e 's/"/\\"/g' -e 's/.*/"&\\n"/' <$2 >>$1.h
+echo \; >>$1.h
+
