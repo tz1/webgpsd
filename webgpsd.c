@@ -12,7 +12,6 @@ char *xbuf;
 
 //config params
 int kmlinterval = 5;
-char *zipkml = "/usr/bin/kml2kmz";
 
 extern void add2kml(char *);
 
@@ -297,6 +296,18 @@ static void kmlanno(char *buf) {
     add2kml(xbuf);
 }
 
+#include <sys/wait.h>
+static void reapkid(int signo)
+{
+    int status = 0, child = 9999;
+
+    while( 0 < (child = waitpid(-1, &status, WNOHANG)) ) {
+        fprintf(errfd, "Child %d exited with status %d\n", child, status);
+        // mostly kml zips, but if we add connect execs and they need retrys...
+    } // end when no more child processes exit
+    signal(SIGCHLD, reapkid);
+}
+
 //static int lasmn = -1;
 int main(int argc, char *argv[])
 {
@@ -350,6 +361,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, teardown);
     signal(SIGPIPE, SIG_IGN);
     signal(SIGHUP, SIG_IGN);
+    signal(SIGCHLD, reapkid);
 
     listen(lstn, 3);
     listen(lweb, 3);
@@ -374,10 +386,8 @@ int main(int argc, char *argv[])
         fds2 = fds;
         fdserr = fds;
         i = select(++n, &fds, NULL, &fdserr, NULL);
-        if (!i)               // no activity - signal can break
+        if (i < 1)               // no activity - signal can break
             continue;
-        if (i < 0)
-            exit(-2);
 
         /* accept new command connections */
         if (FD_ISSET(lweb, &fds))
@@ -431,7 +441,7 @@ int main(int argc, char *argv[])
                         mainlock--;
                     i = getgpsinfo(acpt[i], buf, thisms);
                     // fresh, good data plus lock, reset aux counter
-                    if (i > 0 && gpst[bestgps].lock) ///////////////////////////////////////////////////
+                    if (gpst[bestgps].gpsfd == acpt[i] && i > 0 && gpst[bestgps].lock) ///////////////////////////////////////////////////
                         mainlock = 100;
                     continue;
                 }

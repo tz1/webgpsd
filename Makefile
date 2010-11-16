@@ -6,9 +6,9 @@ CC=gcc
 CFLAGS+= -g -Wall -I.
 #CFLAGS+= -O6 -I. -U_FORTIFY_SOURCE -Wall # -Wno-attributes
 
-OBJS:= gpsdata.o webgpsd.o web.o #harley.o
+OBJS:= gpsdata.o webgpsd.o web.o kmlzipper.o #harley.o
 
-all: webgpsd kml2kmz
+all: webgpsd
 
 webgpsd: $(OBJS)
 	gcc -o $@ $^ $(LIBS)

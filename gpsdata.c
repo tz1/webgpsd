@@ -190,13 +190,15 @@ void add2kml(char *add)
 }
 
 // Save and zip current KML
-
+extern int kmlzipper( char *kmlfn );
 static void kmzip(char *fname)
 {
-    fprintf(errfd, "exec: %s %s\n", zipkml, fname);
+    fprintf(errfd, "Zipping %s\n", fname);
     if (!fork()) {
-        execlp(zipkml, zipkml, fname, NULL);
-        exit(-1);
+        int k, n = getdtablesize();
+        for( k = 3 ; k < n ; k++ )
+            close(k);
+        exit( kmlzipper( fname ) );
     }
 }
 
@@ -455,11 +457,15 @@ int getgpsinfo(int chan, char *buf, int msclock)
     else
         printf("%s\n", field[0]);
 #endif
+    if( bestgps != cidx )
+        return 1;
 
     if (!gpst[cidx].mo || !gpst[cidx].dy)
         return 1;
     // within 24 hours, only when gpst[cidx].lock since two unlocked GPS can have different times
-    if (kmlinterval && gpst[cidx].lock && kmmn != (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval) {
+    // only when sc < 30 to avoid bestgps jitter (5:00->4:59) causing a hiccup
+    if (kmlinterval && gpst[cidx].lock && gpst[cidx].sc < 30 
+        && kmmn != (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval) {
         kmmn = (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval;
         rotatekml();
         logfd = fopen("current.kml", "w+b");
