@@ -112,20 +112,20 @@ static void gethms(int i)
 static int getminutes(char *d)
 {
     int i;
-    i = (*d++ - '0') * 100000;
+    i = (*d++ - '0') * 1000000;
     //Minutes with decimal
-    i += (*d++ - '0') * 10000;
+    i += (*d++ - '0') * 100000;
     if (*d)
         d++;
+    if (*d)
+        i += (*d++ - '0') * 10000;
     if (*d)
         i += (*d++ - '0') * 1000;
     if (*d)
         i += (*d++ - '0') * 100;
     if (*d)
         i += (*d++ - '0') * 10;
-    if (*d)
-        i += *d++ - '0';
-    return i * 5 / 3;
+    return (i + 1) / 6;
 }
 
 static void getll(int f)
@@ -294,7 +294,11 @@ int getgpsinfo(int chan, char *buf, int msclock)
         return 0;
 
     // ignore all but standard NMEA
-    if (strncmp(d, "$GP", 3))
+    if (*d != '$' )
+        return 0;
+    if (d[1] != 'G' )
+        return 0;
+    if (d[2] != 'P' && d[2] != 'N' )
         return 0;
 
     c = d;
@@ -312,7 +316,6 @@ int getgpsinfo(int chan, char *buf, int msclock)
     //null out asterisk
     *c = 0;
 
-
     c = d;
 
     //find and update timestamp
@@ -328,7 +331,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
 
     //Split into fields at the commas
     fmax = 0;
-    c++;
+    c+=3;
     for (;;) {
         field[fmax++] = c;
         c = strchr(c, ',');
@@ -338,7 +341,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
     }
 
     //Latitude, Longitude, and other info
-    if (fmax == 13 && !strcmp(field[0], "GPRMC")) {
+    if (fmax == 13 && !strcmp(field[0], "RMC")) {
         //NEED TO VERIFY FMAX FOR EACH
         if (field[2][0] != 'A') {
             if( gpst[cidx].lock )
@@ -361,7 +364,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
             if (!firslock)
                 writelock();
         }
-    } else if (fmax == 15 && !strcmp(field[0], "GPGGA")) {
+    } else if (fmax == 15 && !strcmp(field[0], "GGA")) {
         i = field[6][0] - '0';
 	// was gpst[cidx].lock, but it would prevent GPRMC alt
         if (!i)
@@ -380,7 +383,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
         //9, 10 - Alt, units M
     }
 #if 0 // depend on RMC to avoid midnight bugs
-    else if (fmax == 8 && !strcmp(field[0], "GPGLL")) {
+    else if (fmax == 8 && !strcmp(field[0], "GLL")) {
         if (field[6][0] != 'A') {
 #if 0       // this will cause problems for the kml rotate if the time is wrong
             if (strlen(field[5]))
@@ -397,14 +400,14 @@ int getgpsinfo(int chan, char *buf, int msclock)
     }
 #endif
 #if 0
-    else if (fmax == 10 && !strcmp(field[0], "GPVTG")) {
+    else if (fmax == 10 && !strcmp(field[0], "VTG")) {
         gpst[cidx].gtrk = get3dp(1);
         gpst[cidx].gspd = get3dp(5) * 1151 / 1000;
         //convert to MPH
     }
 #endif
     //Satellites and status
-    else if (!(fmax & 3) && fmax >= 8 && fmax <= 20 && !strcmp(field[0], "GPGSV")) {
+    else if (!(fmax & 3) && fmax >= 8 && fmax <= 20 && !strcmp(field[0], "GSV")) {
         int j, tot, seq, viewcnt;
         //should check (fmax % 4 == 3)
         tot = get0dp(1);
@@ -439,7 +442,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
 		    gpst[cidx].sats[n].num = -m;
 	    }
 	}
-    } else if (fmax == 18 && !strcmp(field[0], "GPGSA")) {
+    } else if (fmax == 18 && !strcmp(field[0], "GSA")) {
         gpsat[cidx].satset = 255;
         gpst[cidx].fix = get0dp(2);
 	gpsat[cidx].nused = 0;
@@ -455,7 +458,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
     }
 #if 0
     else
-        printf("%s\n", field[0]);
+        printf("?%s\n", field[0]);
 #endif
     if( bestgps != cidx )
         return 1;

@@ -1,22 +1,21 @@
 Config / comline:
-        Listen ports as array
+	where to store?
+        Listen ports as array, list in cmdline?
         chdir for logfiles
-        err log?
+        err log name/loc?
 
 Sources:
         python connect/send script (looped?) launcher
-        serial port termios?
-
-Harley/OBD:
-        reintegrate or split to harleyd
-        revive miniobdd
+        serial port set comm via termios?
 
 Web:
         per-source status display?
         return array of sources?
+	(need something like this for gpsd-ng)
 
 GPSD:
         move to json commands (?)
 
-Misc:
-        Eat other HTTP commands (POST, HEAD, PUT, DELETE, OPTION, etc. rfc 2616)
+Harley/OBD:
+        reintegrate or split to harleyd
+        revive miniobdd

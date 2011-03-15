@@ -110,6 +110,10 @@ int kmlzipper( char *kmlfn )
     pkchead[28] = strlen(fname);
     pkcend[12] = strlen(fname) + sizeof(pkchead);
 
+/*
+ * I know, why aren't you using zlib?  Well, this was orignally on a hacked firmware
+ * that didn't have much space or libz.so, but did have gzip as part of busybox.
+ */
     pipe(pipeto);
     pipe(pipefrom);
     pid = fork();

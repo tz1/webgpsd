@@ -1,6 +1,6 @@
 #include "webgpsd.h"
 
-// web pages from server
+// web pages from HTML templates
 #include "dogmaphtml.h"
 #include "satstat.h"
 #include "radfmt.h"
@@ -116,14 +116,15 @@ static void dogmap()
 }
 
 // Wunderground.com severe weather radar, mostly self-contained with refreshing
-static void dorad(int size)
+static void dorad(int size, int picwidth, int picheight)
 {
-    sprintf(xbuf, radfmt, size/2, size*2, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000), size );
+    sprintf(xbuf, radfmt, size/2, size*2, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000), size, picwidth, picheight );
 }
 
 // Standard gps view - menu plus gps source status
 static char gpspage1[] = // menu
 "<HEAD><TITLE>%s</TITLE><meta http-equiv=\"refresh\" content=\"5\">"
+"<meta name = \"viewport\" content = \"width = 480\">"
 "<style type=\"text/css\">table a {display: block; width: 100%; height: 100%}</style>"
 "</HEAD><BODY>\n"
     "<table><tr><td>"
@@ -202,8 +203,9 @@ void dowebget() {
         c += 5;
         int i = atoi(c);
         if( !i )
-            i = 20;
-        dorad(i);
+            i = 20; // miles = about 17 px per mile
+        int w = 340, h = 340;
+        dorad(i,w,h);
     }
     else if ((c = strstr(xbuf, "sats"))) {
         dosats();
