@@ -1,6 +1,6 @@
 #include "webgpsd.h"
 
-// web pages from HTML templates
+// web pages from HTML templat'es
 #include "dogmaphtml.h"
 #include "satstat.h"
 #include "radfmt.h"
@@ -10,19 +10,17 @@ static char gpskml[] = "<Document>"
   "<flyToView>1</flyToView>"
   "<name>%s %d.%03d</name>"
   "<LookAt>"
-    "<longitude>%d.%06d</longitude>\n"
-    "<latitude>%d.%06d</latitude>\n"
-    "<range>%d</range>"
-    "<tilt>%d</tilt>"
-    "<heading>%d.%03d</heading>"
+  "<longitude>%d.%06d</longitude>\n"
+  "<latitude>%d.%06d</latitude>\n"
+  "<range>%d</range>"
+  "<tilt>%d</tilt>"
+  "<heading>%d.%03d</heading>"
   "</LookAt>"
   "<Placemark>"
-    "<Style><IconStyle><Icon><href>"
-    "root://icons/high_res_places.png"
-    "</href></Icon></IconStyle></Style>"
-    "<Point><coordinates>" "%d.%06d,%d.%06d" "</coordinates></Point>"
-  "</Placemark>"
-  "</Document>\n";
+  "<Style><IconStyle><Icon><href>"
+  "root://icons/high_res_places.png"
+  "</href></Icon></IconStyle></Style>"
+  "<Point><coordinates>" "%d.%06d,%d.%06d" "</coordinates></Point>" "</Placemark>" "</Document>\n";
 
 void dokml(char *c)
 {
@@ -41,11 +39,11 @@ void dokml(char *c)
     tilt = atoi(&d[1]);
 
     sprintf(xbuf, gpskml, rtname, gpst[bestgps].gspd / 1000, gpst[bestgps].gspd % 1000,
-            gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000),
-            gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), range, tilt,
-            gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000,
-            gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000),
-            gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000));
+      gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000),
+      gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), range, tilt,
+      gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000,
+      gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000),
+      gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000));
 }
 
 // moving google map v2 API XML, see GDownloadUrl
@@ -53,59 +51,124 @@ static char xmldata[] = "<xml><markers><marker lat=\"%d.%06d\" lng=\"%d.%06d\"/>
 static void doxml()
 {
     sprintf(xbuf, xmldata, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000),
-            gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000));
+      gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000));
 }
 
 // JSON for web - generally NOT gpsd-ng (that will go into the mainline)
-static char jsondata[] = "{lat:%d.%06d,lon:%d.%06d,alt:%d.%03d,pdop:%d.%02d,hdop:%d.%02d,vdop:%d.%02d,track:%d.%03d,speed:%d.%03d,mode:%d,ns:%d,\r\nu:[";
+static char jsondata[] =
+  "{lat:%d.%06d,lon:%d.%06d,alt:%d.%03d,pdop:%d.%02d,hdop:%d.%02d,vdop:%d.%02d,track:%d.%03d,speed:%d.%03d,mode:%d,ns:%d,\r\nu:[";
 static void dojson()
 {
+    int spd = gpst[bestgps].gspd * 447 / 1000; // mph to m/s
     sprintf(xbuf, jsondata, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000),
-            gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000),
-            gpst[bestgps].alt / 1000, abs(gpst[bestgps].alt % 1000),
-            gpst[bestgps].pdop / 1000, gpst[bestgps].pdop % 1000 / 10,
+      gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000),
+      gpst[bestgps].alt / 1000, abs(gpst[bestgps].alt % 1000),
+      gpst[bestgps].pdop / 1000, gpst[bestgps].pdop % 1000 / 10,
+      gpst[bestgps].hdop / 1000, gpst[bestgps].hdop % 1000 / 10,
+      gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10,
+      gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000,
+      spd / 1000, spd % 1000, gpst[bestgps].fix, gpst[bestgps].nsats);
+    int n;
+    char cbuf[64];
+    for (n = 0; n < gpst[bestgps].nsats; n++) {
+        if (n)
+            strcat(xbuf, ",");
+        sprintf(cbuf, "%d", gpst[bestgps].sats[n].num < 0);
+        strcat(xbuf, cbuf);
+    }
+    strcat(xbuf, "],\r\nn:[");
+    for (n = 0; n < gpst[bestgps].nsats; n++) {
+        if (n)
+            strcat(xbuf, ",");
+        sprintf(cbuf, "%d", abs(gpst[bestgps].sats[n].num));
+        strcat(xbuf, cbuf);
+    }
+    strcat(xbuf, "],\r\nel:[");
+    for (n = 0; n < gpst[bestgps].nsats; n++) {
+        if (n)
+            strcat(xbuf, ",");
+        sprintf(cbuf, "%d", gpst[bestgps].sats[n].el);
+        strcat(xbuf, cbuf);
+    }
+    strcat(xbuf, "],\r\naz:[");
+    for (n = 0; n < gpst[bestgps].nsats; n++) {
+        if (n)
+            strcat(xbuf, ",");
+        sprintf(cbuf, "%d", gpst[bestgps].sats[n].az);
+        strcat(xbuf, cbuf);
+    }
+    strcat(xbuf, "],\r\nsn:[");
+    for (n = 0; n < gpst[bestgps].nsats; n++) {
+        if (n)
+            strcat(xbuf, ",");
+        sprintf(cbuf, "%d", gpst[bestgps].sats[n].sn);
+        strcat(xbuf, cbuf);
+    }
+    strcat(xbuf, "]}\r\n");
+
+}
+
+// JSON gpsd-ng watch format
+char ngsjson0[] = "{\"class\":\"SKY\",\"tag\":\"GSV\",\"vdop\":%d.%02d,\"hdop\":%d.%02d,\"pdop\":%d.%02d,\"satellites\":[";
+char ngsjson1[] = "{\"PRN\":%d,\"el\":%d,\"az\":%d,\"ss\":%d,\"used\":%s},";
+// note that it returns alt even in 2d and the others even if no fix.
+char ngfjson1[] =
+  "{\"class\":\"TPV\",\"tag\":\"RMC\",\"time\":\"%4d-%02d-%02dT%02d:%02d:%02d.%02dZ\",\"mode\":%d}\r\n";
+char ngfjson2[] =
+  "{\"class\":\"TPV\",\"tag\":\"RMC\",\"time\":\"20%02d-%02d-%02dT%02d:%02d:%02d.%02dZ\","
+"\"lat\":%d.%6d,\"lon\":%d.%6d,\"track\":%d.%03d,\"speed\":%d.%03d,\"mode\":%d}\r\n";
+char ngfjson3[] =
+  "{\"class\":\"TPV\",\"tag\":\"RMC\",\"time\":\"20%02d-%02d-%02dT%02d:%02d:%02d.%02dZ\","
+"\"lat\":%d.%6d,\"lon\":%d.%6d,\"alt\":%d.%03d,\"track\":%d.%03d,\"speed\":%d.%03d,\"mode\":%d}\r\n";
+void dongjson()
+{
+    char *c;
+    // fix
+    switch(gpst[bestgps].fix) {
+    case 2:
+        sprintf(xbuf, ngfjson2,
+      gpst[bestgps].yr, gpst[bestgps].mo, gpst[bestgps].dy, gpst[bestgps].hr, gpst[bestgps].mn, gpst[bestgps].sc,
+      gpst[bestgps].scth / 10, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), gpst[bestgps].llon / 1000000,
+      abs(gpst[bestgps].llon % 1000000), gpst[bestgps].gtrk / 1000,
+      gpst[bestgps].gtrk % 1000, gpst[bestgps].gspd / 1000, gpst[bestgps].gspd % 1000, gpst[bestgps].fix);
+        break;
+    case 3:
+        sprintf(xbuf, ngfjson3,
+      gpst[bestgps].yr, gpst[bestgps].mo, gpst[bestgps].dy, gpst[bestgps].hr, gpst[bestgps].mn, gpst[bestgps].sc,
+      gpst[bestgps].scth / 10, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), gpst[bestgps].llon / 1000000,
+      abs(gpst[bestgps].llon % 1000000), gpst[bestgps].alt / 1000, abs(gpst[bestgps].alt % 1000), gpst[bestgps].gtrk / 1000,
+      gpst[bestgps].gtrk % 1000, gpst[bestgps].gspd / 1000, gpst[bestgps].gspd % 1000, 3);
+        break;
+    default:
+        {
+        struct timeval tv;
+        struct tm *tmpt;
+        gettimeofday(&tv, NULL);
+        tmpt = gmtime(&tv.tv_sec);
+        sprintf(xbuf, ngfjson1,
+                tmpt->tm_year, 1 + tmpt->tm_mon, tmpt->tm_mday, tmpt->tm_hour, tmpt->tm_min, tmpt->tm_sec, tv.tv_usec/10000,
+                gpst[bestgps].fix);
+        }
+        break;
+    }
+    // satelliter status
+    c = xbuf + strlen(xbuf);
+    sprintf(c, ngsjson0,
+            gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10,
             gpst[bestgps].hdop / 1000, gpst[bestgps].hdop % 1000 / 10,
-            gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10, 
-            gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000,
-            gpst[bestgps].gspd / 1000, gpst[bestgps].gspd % 1000, 
-            gpst[bestgps].fix, gpst[bestgps].nsats);
-            int n;
-            char cbuf[64];
-            for (n = 0; n < gpst[bestgps].nsats; n++) {
-                if(n)
-                    strcat(xbuf, ",");
-                sprintf(cbuf, "%d", gpst[bestgps].sats[n].num < 0);
-                strcat(xbuf, cbuf);
-            }
-            strcat(xbuf, "],\r\nn:[");
-            for (n = 0; n < gpst[bestgps].nsats; n++) {
-                if(n)
-                    strcat(xbuf, ",");
-                sprintf(cbuf, "%d",  abs(gpst[bestgps].sats[n].num));
-                strcat(xbuf, cbuf);
-            }
-            strcat(xbuf, "],\r\nel:[");
-            for (n = 0; n < gpst[bestgps].nsats; n++) {
-                if(n)
-                    strcat(xbuf, ",");
-                sprintf(cbuf, "%d", gpst[bestgps].sats[n].el);
-                strcat(xbuf, cbuf);
-            }
-            strcat(xbuf, "],\r\naz:[");
-            for (n = 0; n < gpst[bestgps].nsats; n++) {
-                if(n)
-                    strcat(xbuf, ",");
-                sprintf(cbuf, "%d", gpst[bestgps].sats[n].az);
-                strcat(xbuf, cbuf);
-            }
-            strcat(xbuf, "],\r\nsn:[");
-            for (n = 0; n < gpst[bestgps].nsats; n++) {
-                if(n)
-                    strcat(xbuf, ",");
-                sprintf(cbuf, "%d", gpst[bestgps].sats[n].sn);
-                strcat(xbuf, cbuf);
-            }
-            strcat(xbuf,"]}\r\n");
+            gpst[bestgps].pdop / 1000, gpst[bestgps].pdop % 1000 / 10);
+    int n;
+    for (n = 0; n < gpst[bestgps].nsats; n++) {
+        c += strlen(c);
+        sprintf(c, ngsjson1,
+          abs(gpst[bestgps].sats[n].num),
+          gpst[bestgps].sats[n].el, gpst[bestgps].sats[n].az, gpst[bestgps].sats[n].sn,
+          gpst[bestgps].sats[n].num < 0 ? "true" : "false");
+    }
+    c += strlen(c);
+    c--;
+    *c = 0;                     // trailing comma
+    strcat(c, "]}\r\n");
 
 }
 
@@ -118,23 +181,22 @@ static void dogmap()
 // Wunderground.com severe weather radar, mostly self-contained with refreshing
 static void dorad(int size, int picwidth, int picheight)
 {
-    sprintf(xbuf, radfmt, size/2, size*2, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000), size, picwidth, picheight );
+    sprintf(xbuf, radfmt, size / 2, size * 2, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000),
+      gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000), size, picwidth, picheight);
 }
 
 // Standard gps view - menu plus gps source status
-static char gpspage1[] = // menu
-"<HEAD><TITLE>%s</TITLE><meta http-equiv=\"refresh\" content=\"5\">"
-"<meta name = \"viewport\" content = \"width = 480\">"
-"<style type=\"text/css\">table a {display: block; width: 100%; height: 100%}</style>"
-"</HEAD><BODY>\n"
-    "<table><tr><td>"
-    "\n<table border=1>"
-    "<tr><td><a href=/dogmap.html><h1><br>MAP<br><br></a>"
-    "<tr><td><a href=/sats.html><h1><br>SatStat<br><br></a>"
-    "<tr><td><a href=/radar20.html><h1><br>RADAR<br><br></a>"
-"</table>\n";
+static char gpspage1[] =        // menu
+  "<HEAD><TITLE>%s</TITLE><meta http-equiv=\"refresh\" content=\"5\">"
+  "<meta name = \"viewport\" content = \"width = 480\">"
+  "<style type=\"text/css\">table a {display: block; width: 100%; height: 100%}</style>"
+  "</HEAD><BODY>\n"
+  "<table><tr><td>"
+  "\n<table border=1>"
+  "<tr><td><a href=/dogmap.html><h1><br>MAP<br><br></a>"
+  "<tr><td><a href=/sats.html><h1><br>SatStat<br><br></a>" "<tr><td><a href=/radar20.html><h1><br>RADAR<br><br></a>" "</table>\n";
 
-static char gpspage2[] = // source status
+static char gpspage2[] =        // source status
   "<td>\n<table border=%d><tr><td>"
   "%02d-%02d-%02d %02d:%02d:%02d<tr><td>"
   "lat=%d.%06d<tr><td>lon=%d.%06d<tr><td>"
@@ -144,8 +206,8 @@ static char gpspage2[] = // source status
   "trk=%d.%03d<tr><td>" "PDoP=%d.%02d<tr><td>" "HDoP=%d.%02d<tr><td>" "VDoP=%d.%02d</table>\n"
   "<td>\n<table border=%d><tr><th>SN<th>EL<th>AZM<th>SG<th>U</tr>";
 
-static char gpspage9[] = // closing
-    "</table>\n</BODY></HTML>";
+static char gpspage9[] =        // closing
+  "</table>\n</BODY></HTML>";
 
 static void doweb()
 {
@@ -155,24 +217,23 @@ static void doweb()
     if (!c)
         c = "";
     sprintf(xbuf, gpspage1, rtname);
-    for( i = 0 ; i < MAXSRC; i++ ) {
-        if( gpst[i].gpsfd < -1 )
+    for (i = 0; i < MAXSRC; i++) {
+        if (gpst[i].gpsfd < -1)
             break;
-        if( gpst[i].gpsfd < 0 )
+        if (gpst[i].gpsfd < 0)
             continue;
         sprintf(&xbuf[strlen(xbuf)], gpspage2, i == bestgps ? 3 : 1, gpst[i].yr, gpst[i].mo, gpst[i].dy,
-            gpst[i].hr, gpst[i].mn, gpst[i].sc,
-            gpst[i].llat / 1000000, abs(gpst[i].llat % 1000000), gpst[i].llon / 1000000,
-            abs(gpst[i].llon % 1000000), gpst[i].fix, gpst[i].lock ? (gpst[i].lock == 1 ? "GPS" : "DGPS") : "no",
-            gpst[i].alt / 1000, abs(gpst[i].alt % 1000)
-            , gpst[i].gspd / 1000, gpst[i].gspd % 1000, gpst[i].gtrk / 1000, gpst[i].gtrk % 1000,
-            gpst[i].pdop / 1000, gpst[i].pdop % 1000 / 10, gpst[i].hdop / 1000, gpst[i].hdop % 1000 / 10,
-                gpst[i].vdop / 1000, gpst[i].vdop % 1000 / 10, i == bestgps ? 3 : 1);
+          gpst[i].hr, gpst[i].mn, gpst[i].sc,
+          gpst[i].llat / 1000000, abs(gpst[i].llat % 1000000), gpst[i].llon / 1000000,
+          abs(gpst[i].llon % 1000000), gpst[i].fix, gpst[i].lock ? (gpst[i].lock == 1 ? "GPS" : "DGPS") : "no",
+          gpst[i].alt / 1000, abs(gpst[i].alt % 1000)
+          , gpst[i].gspd / 1000, gpst[i].gspd % 1000, gpst[i].gtrk / 1000, gpst[i].gtrk % 1000,
+          gpst[i].pdop / 1000, gpst[i].pdop % 1000 / 10, gpst[i].hdop / 1000, gpst[i].hdop % 1000 / 10,
+          gpst[i].vdop / 1000, gpst[i].vdop % 1000 / 10, i == bestgps ? 3 : 1);
         for (n = 0; n < gpsat[i].nsats; n++) {
             int m;
             sprintf(&xbuf[strlen(xbuf)], "<tr><td>%02d<td>%02d<td>%03d<td>%02d<td>", gpsat[i].view[n],
-                    gpsat[i].el[gpsat[i].view[n]], gpsat[i].az[gpsat[i].view[n]],
-                    gpsat[i].sn[gpsat[i].view[n]]);
+              gpsat[i].el[gpsat[i].view[n]], gpsat[i].az[gpsat[i].view[n]], gpsat[i].sn[gpsat[i].view[n]]);
             for (m = 0; m < 12; m++)
                 if (gpsat[i].sats[m] == gpsat[i].view[n])
                     break;
@@ -184,15 +245,19 @@ static void doweb()
 }
 
 // self-contained javascript sat html5 canvas using web json
-static void dosats() {
-    strcpy( xbuf, satstat );
+static void dosats()
+{
+    strcpy(xbuf, satstat);
 }
 
 // really primitive parser
-void dowebget() {
+void dowebget()
+{
     char *c;
     if (strstr(xbuf, "kml"))
         dokml(xbuf);
+    else if (strstr(xbuf, "ngjson"))
+        dongjson(xbuf);
     else if (strstr(xbuf, "json"))
         dojson(xbuf);
     else if (strstr(xbuf, "gpsdata.xml"))
@@ -202,10 +267,10 @@ void dowebget() {
     else if ((c = strstr(xbuf, "radar"))) {
         c += 5;
         int i = atoi(c);
-        if( !i )
-            i = 20; // miles = about 17 px per mile
+        if (!i)
+            i = 20;             // miles = about 17 px per mile
         int w = 340, h = 340;
-        dorad(i,w,h);
+        dorad(i, w, h);
     }
     else if ((c = strstr(xbuf, "sats"))) {
         dosats();

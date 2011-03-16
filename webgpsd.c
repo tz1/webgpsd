@@ -53,12 +53,16 @@ static void prtgpsinfo(int conn, char *c)
             break; 
         case 'O': 
             gettimeofday(&tv, NULL); 
+            int mpspd = gpst[bestgps].gspd * 447 / 1000; // mph to m/s
             sprintf(cbuf, ",O=RMC %d.%02d 0.0 %d.%06d %d.%06d %d.%03d %d.%02d %d.%02d %d.%03d %d.%03d 0.0 ? 0.0 ? %d", 
                     (unsigned int) tv.tv_sec, (unsigned int) tv.tv_usec / 10000, 
-                    gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000), 
+                    gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000), 
+                    gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000), 
                     gpst[bestgps].alt / 1000, abs(gpst[bestgps].alt % 1000), 
                     gpst[bestgps].hdop / 1000, gpst[bestgps].hdop % 1000 / 10, 
-                    gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10, gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000, gpst[bestgps].gspd / 1000, gpst[bestgps].gspd % 1000, 
+                    gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10, 
+                    gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000, 
+                    mpspd / 1000, mpspd % 1000, 
                     gpst[bestgps].fix); 
             break; 
         case 'R': 
@@ -66,7 +70,11 @@ static void prtgpsinfo(int conn, char *c)
             sprintf(cbuf, ",R=%d", raw[conn]); 
             break;
         case 'W': 
-            if( c[1] == '+' || c[1] == '1' ) {
+            if( c[1] == '2' ) {
+                c++;
+                watch[conn] = 2;
+            }
+            else if( c[1] == '+' || c[1] == '1' ) {
                 c++;
                 watch[conn] = 1;
             }
@@ -139,6 +147,8 @@ static void doraw(char *str)
     } 
 } 
 
+extern void dongjson(void);
+
 static void dowatch() 
 { 
     int i;
@@ -147,10 +157,21 @@ static void dowatch()
     for (i = 0; i < amax; i++) { 
         if (acpt[i] == -1) 
             continue; 
-        if (!watch[i]) 
-            continue; 
-        prtgpsinfo(i, oy);
+        if( watch[i] == 1 )
+            prtgpsinfo(i, oy);
     } 
+    dongjson();
+    int n = strlen(xbuf);
+    for (i = 0; i < amax; i++) { 
+        if (acpt[i] == -1) 
+            continue; 
+        if( watch[i] == 2 ) {
+            if (n != write(acpt[i], xbuf, n)) { 
+                close(acpt[i]); 
+                acpt[i] = -1; 
+            } 
+        } 
+    }
 } 
 
 static char *pidlockfile = "/tmp/webgpsd.pid"; 
@@ -415,11 +436,13 @@ int main(int argc, char *argv[])
                     continue;
                 }
                 buf[n] = 0;
-                if (!strncmp(buf, "GET ", 4) && strstr(buf, "HTTP/1")) {
-                    strncpy(xbuf, buf, 128);
-                    xbuf[128] = 0;      // force null term string
-                    dowebget();
-                    write(acpt[i], xbuf, strlen(xbuf));
+                if(strstr(buf, "HTTP/1")) { // http request
+                    if(!strncmp(buf, "GET ", 4)) { // only one allowed
+                        strncpy(xbuf, buf, 128);
+                        xbuf[128] = 0;      // force null term string
+                        dowebget();
+                        write(acpt[i], xbuf, strlen(xbuf));
+                    }
                     close(acpt[i]);
                     acpt[i] = -1;
                     continue;
