@@ -217,7 +217,7 @@ static char gpspage2[] =        // source status
   "alt=%d.%03d<tr><td>"
   "spd=%d.%03d<tr><td>"
   "trk=%d.%03d<tr><td>" "PDoP=%d.%02d<tr><td>" "HDoP=%d.%02d<tr><td>" "VDoP=%d.%02d</table>\n"
-  "<td>\n<table border=%d><tr><th>SN<th>EL<th>AZM<th>SG<th>U</tr>";
+  "<td>\n<table border=%d><tr><th>PRN<th>Elev<th>Azim<th>Sgnl<th>Usd</tr>";
 
 static char gpspage9[] =        // closing
   "</table>\n</BODY></HTML>";
@@ -225,7 +225,7 @@ static char gpspage9[] =        // closing
 static void doweb()
 {
     char *c;
-    int i;
+    int i,n;
     c = strchr(xbuf, '&');
     if (!c)
         c = "";
@@ -243,9 +243,24 @@ static void doweb()
           , gpst[i].gspd / 1000, gpst[i].gspd % 1000, gpst[i].gtrk / 1000, gpst[i].gtrk % 1000,
           gpst[i].pdop / 1000, gpst[i].pdop % 1000 / 10, gpst[i].hdop / 1000, gpst[i].hdop % 1000 / 10,
           gpst[i].vdop / 1000, gpst[i].vdop % 1000 / 10, i == bestgps ? 3 : 1);
-        // sats go here
+	// sats
+	for (n = 0; n < gpst[i].pnsats; n++) 
+	  sprintf(&xbuf[strlen(xbuf)], "<tr><td>%d<td>%d<td>%d<td>%d<td>%c</tr>\n",
+		  abs(gpst[i].psats[n].num),
+		  gpst[i].psats[n].el,
+		  gpst[i].psats[n].az,
+		  gpst[i].psats[n].sn,
+		  gpst[i].psats[n].num < 0 ?'*':' ');
+	for (n = 0; n < gpst[i].lnsats; n++) 
+	  sprintf(&xbuf[strlen(xbuf)], "<tr><td>%d<td>%d<td>%d<td>%d<td>%c</tr>\n",
+		  abs(gpst[i].lsats[n].num),
+		  gpst[i].lsats[n].el,
+		  gpst[i].lsats[n].az,
+		  gpst[i].lsats[n].sn,
+		  gpst[i].lsats[n].num < 0 ?'*':' ');
         sprintf(&xbuf[strlen(xbuf)], "</table>\n</td>\n");
     }
+
     strcpy(&xbuf[strlen(xbuf)], gpspage9);
 }
 

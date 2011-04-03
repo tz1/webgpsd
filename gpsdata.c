@@ -405,6 +405,8 @@ int getgpsinfo(int chan, char *buf, int msclock)
             i = getndp(field[j], 0);
             if (!i)
                 break;
+	    if( i > 119 ) // WAAS,EGNOS high numbering
+	      i -= 87;
             gpsat[cidx].view[i] = 1;
             gpsat[cidx].el[i] = getndp(field[j + 1], 0);
             gpsat[cidx].az[i] = getndp(field[j + 2], 0);
@@ -458,15 +460,19 @@ int getgpsinfo(int chan, char *buf, int msclock)
         gpst[cidx].vdop = getndp(field[17], 3);
 
         int j = getndp(field[3], 0);
+	if( j > 119 )
+	    j -= 87;
         if (j && j < 65) {
             gpsat[cidx].psatset = 255;
             for (i = 0; i < 65; i++)
                 gpsat[cidx].used[i] = 0;
             gpsat[cidx].pnused = 0;
             for (i = 3; i < 15; i++) {
-                int j = getndp(field[i], 0);
-                if (j) {
-                    gpsat[cidx].used[j]++;
+                int k = getndp(field[i], 0);
+		if( k > 119 )
+		  k -= 87;
+                if (k) {
+                    gpsat[cidx].used[k]++;
                     gpsat[cidx].pnused++;
                 }
                 // else break;?
@@ -478,9 +484,11 @@ int getgpsinfo(int chan, char *buf, int msclock)
                 gpsat[cidx].used[i] = 0;
             gpsat[cidx].lnused = 0;
             for (i = 3; i < 15; i++) {
-                int j = getndp(field[i], 0);
-                if (j) {
-                    gpsat[cidx].used[j]++;
+                int k = getndp(field[i], 0);
+		if( k > 119 )
+		  k -= 87;
+                if (k) {
+                    gpsat[cidx].used[k]++;
                     gpsat[cidx].lnused++;
                 }
                 // else break;?
