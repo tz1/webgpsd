@@ -14,7 +14,7 @@ Web:
 	(need something like this for gpsd-ng)
 
 GPSD:
-        move to json commands (?)
+        move to json commands (?), sync format with gpsd-ng.
 
 Harley/OBD:
         reintegrate or split to harleyd
