@@ -23,7 +23,7 @@ function dodraw() {
     canv.fillStyle = '#000'
     canv.fillRect(0,0, wd,ht)
     xh=new XMLHttpRequest()
-    setInterval(update, 500)
+    setInterval(update, 1000)
 }
 
 function update() {
@@ -56,7 +56,7 @@ function update() {
     if( gps.mode < 1.5 )
       canv.strokeStyle = '#666'
     else if( gps.mode > 2.5 )
-      canv.strokeStyle = '#080'
+      canv.strokeStyle = '#0c0'
     else
       canv.strokeStyle = '#880'
 

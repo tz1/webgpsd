@@ -41,14 +41,19 @@ struct gpsstate {
   // lock, 0-1.  fix from GPGSA
     int lock, fix;
   // number of sats visible, number being used in fix
-    int nsats, nused;
+    int pnsats, pnused;
+    int lnsats, lnused;
   // satellite table
-    struct satinfo sats[20];
+    struct satinfo psats[32];
+    struct satinfo lsats[32];
 };
 
 struct gpssats {
-    int satset, nsats, nused;
-    int sats[50], view[100]; // list of used, inview
+    int psatset;
+    int lsatset;
+    int pnsats, pnused;
+    int lnsats, lnused;
+    int used[100], view[100]; // list of used, inview
     int el[100], az[100], sn[100];
 };
 #if 0

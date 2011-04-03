@@ -65,35 +65,25 @@ static int get3(char *c)
     return i;
 }
 
-static int get3dp(int f)
+unsigned int tenexp[] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+
+static int getndp(char *d, int p)
 {
     int i = 0;
-    char *d = field[f];
     while (*d && *d != '.') {
         i *= 10;
         i += (*d++ - '0');
     }
-    i *= 1000;
+    if (!p)
+        return i;
+
+    i *= tenexp[p];
+
     if (*d == '.')
         d++;
+    while (*d && p--)
+        i += (*d++ - '0') * tenexp[p];  // p == 0 can be optimized
 
-    if (*d)
-        i += (*d++ - '0') * 100;
-    if (*d)
-        i += (*d++ - '0') * 10;
-    if (*d)
-        i += *d++ - '0';
-    return i;
-}
-
-static int get0dp(int f)
-{
-    int i = 0;
-    char *d = field[f];
-    while (*d && *d != '.') {
-        i *= 10;
-        i += (*d++ - '0');
-    }
     return i;
 }
 
@@ -109,25 +99,6 @@ static void gethms(int i)
         gpst[cidx].scth = get3(&c[7]);
 }
 
-static int getminutes(char *d)
-{
-    int i;
-    i = (*d++ - '0') * 1000000;
-    //Minutes with decimal
-    i += (*d++ - '0') * 100000;
-    if (*d)
-        d++;
-    if (*d)
-        i += (*d++ - '0') * 10000;
-    if (*d)
-        i += (*d++ - '0') * 1000;
-    if (*d)
-        i += (*d++ - '0') * 100;
-    if (*d)
-        i += (*d++ - '0') * 10;
-    return (i + 1) / 6;
-}
-
 static void getll(int f)
 {
     int l, d;
@@ -136,7 +107,7 @@ static void getll(int f)
     c = field[f++];
     l = get2(c);
     c += 2;
-    d = getminutes(c);
+    d = (getndp(c, 5) + 1) / 6;
 
     c = field[f++];
     l *= 1000000;
@@ -150,10 +121,9 @@ static void getll(int f)
     c = field[f++];
     l = get3(c);
     c += 3;
-    d = getminutes(c);
+    d = (getndp(c, 5) + 1) / 6;
 
     c = field[f];
-
     l *= 1000000;
     l += d;
     if (*c != 'E')
@@ -190,15 +160,15 @@ void add2kml(char *add)
 }
 
 // Save and zip current KML
-extern int kmlzipper( char *kmlfn );
+extern int kmlzipper(char *kmlfn);
 static void kmzip(char *fname)
 {
     fprintf(errfd, "Zipping %s\n", fname);
     if (!fork()) {
         int k, n = getdtablesize();
-        for( k = 3 ; k < n ; k++ )
+        for (k = 3; k < n; k++)
             close(k);
-        exit( kmlzipper( fname ) );
+        exit(kmlzipper(fname));
     }
 }
 
@@ -232,7 +202,7 @@ void rotatekml()
             lbuf[10] = 0;
             strcat(lbuf, ".prlock.kml");
             //      if( ftell(logfd) <= strlen(kmltail) * 2 ) {} 
-// if no data, don't rename prelock
+            // if no data, don't rename prelock
             rename("../prlock.kml", lbuf);
             rename("prlock.kml", lbuf);
         }
@@ -294,11 +264,11 @@ int getgpsinfo(int chan, char *buf, int msclock)
         return 0;
 
     // ignore all but standard NMEA
-    if (*d != '$' )
+    if (*d != '$')
         return 0;
-    if (d[1] != 'G' )
+    if (d[1] != 'G')
         return 0;
-    if (d[2] != 'P' && d[2] != 'N' )
+    if (d[2] != 'P' && d[2] != 'N' && d[2] != 'L')
         return 0;
 
     c = d;
@@ -319,19 +289,20 @@ int getgpsinfo(int chan, char *buf, int msclock)
     c = d;
 
     //find and update timestamp
-    for( cidx = 0 ; cidx < MAXSRC; cidx++ )
-        if( gpst[cidx].gpsfd == chan || gpst[cidx].gpsfd == -2 )  // found or EOL
+    for (cidx = 0; cidx < MAXSRC; cidx++)
+        if (gpst[cidx].gpsfd == chan || gpst[cidx].gpsfd == -2) // found or EOL
             break;
-    if( cidx == MAXSRC ) // full, find empty or stale
-        for( cidx = 0 ; cidx < MAXSRC; cidx++ )
-            if( gpst[cidx].gpsfd < 0 || (100000 + msclock - gpst[cidx].lastseen) % 100000 > 1250 )
+    if (cidx == MAXSRC)         // full, find empty or stale
+        for (cidx = 0; cidx < MAXSRC; cidx++)
+            if (gpst[cidx].gpsfd < 0 || (100000 + msclock - gpst[cidx].lastseen) % 100000 > 1250)
                 break;
     gpst[cidx].gpsfd = chan;
     gpst[cidx].lastseen = msclock;
 
     //Split into fields at the commas
     fmax = 0;
-    c+=3;
+    c += 2;
+    char satype = *c++;         // P,L,N
     for (;;) {
         field[fmax++] = c;
         c = strchr(c, ',');
@@ -344,17 +315,18 @@ int getgpsinfo(int chan, char *buf, int msclock)
     if (fmax == 13 && !strcmp(field[0], "RMC")) {
         //NEED TO VERIFY FMAX FOR EACH
         if (field[2][0] != 'A') {
-            if( gpst[cidx].lock )
+            if (gpst[cidx].lock)
                 gpst[cidx].lock = 0;
             return 1;
-        } else {
-            if( !gpst[cidx].lock )
+        }
+        else {
+            if (!gpst[cidx].lock)
                 gpst[cidx].lock = 1;
             gethms(1);
             getll(3);
-            gpst[cidx].gspd = get3dp(7) * 1151 / 1000;
+            gpst[cidx].gspd = getndp(field[7], 3) * 1151 / 1000;
             //convert to MPH
-            gpst[cidx].gtrk = get3dp(8);
+            gpst[cidx].gtrk = getndp(field[8], 3);
             //Date, DDMMYY
             gpst[cidx].dy = get2(field[9]);
             gpst[cidx].mo = get2(&field[9][2]);
@@ -364,36 +336,36 @@ int getgpsinfo(int chan, char *buf, int msclock)
             if (!firslock)
                 writelock();
         }
-    } else if (fmax == 15 && !strcmp(field[0], "GGA")) {
+    }
+    else if (fmax == 15 && (!strcmp(field[0], "GGA") || !strcmp(field[0], "GNS"))) {
         i = field[6][0] - '0';
-	// was gpst[cidx].lock, but it would prevent GPRMC alt
+        // was gpst[cidx].lock, but it would prevent GPRMC alt
         if (!i)
             return 1;
-        else
-            if( gpst[cidx].lock != i )
-                gpst[cidx].lock = i;
+        else if (gpst[cidx].lock != i)
+            gpst[cidx].lock = i;
         // Redundant: getll(2);
         // don't get this here since it won't increment the YMD
         // and create a midnight bug
         //       gethms(1);
         //7 - 2 plc Sats Used
         // 8 - HDOP
-        gpst[cidx].hdop = get3dp(8);
-        gpst[cidx].alt = get3dp(9);
+        gpst[cidx].hdop = getndp(field[8], 3);
+        gpst[cidx].alt = getndp(field[9], 3);
         //9, 10 - Alt, units M
     }
-#if 0 // depend on RMC to avoid midnight bugs
+#if 0                           // depend on RMC to avoid midnight bugs
     else if (fmax == 8 && !strcmp(field[0], "GLL")) {
         if (field[6][0] != 'A') {
-#if 0       // this will cause problems for the kml rotate if the time is wrong
+#if 0                           // this will cause problems for the kml rotate if the time is wrong
             if (strlen(field[5]))
                 gethms(5);
 #endif
-           if( gpst[cidx].lock )
+            if (gpst[cidx].lock)
                 gpst[cidx].lock = 0;
             return 1;
         }
-        if( !gpst[cidx].lock )
+        if (!gpst[cidx].lock)
             gpst[cidx].lock = 1;
         getll(1);
         gethms(5);
@@ -401,106 +373,162 @@ int getgpsinfo(int chan, char *buf, int msclock)
 #endif
 #if 0
     else if (fmax == 10 && !strcmp(field[0], "VTG")) {
-        gpst[cidx].gtrk = get3dp(1);
-        gpst[cidx].gspd = get3dp(5) * 1151 / 1000;
+        gpst[cidx].gtrk = getndp(field[1], 3);
+        gpst[cidx].gspd = getndp(field[5], 3) * 1151 / 1000;
         //convert to MPH
     }
 #endif
     //Satellites and status
     else if (!(fmax & 3) && fmax >= 8 && fmax <= 20 && !strcmp(field[0], "GSV")) {
-        int j, tot, seq, viewcnt;
+        int j, tot, seq;
         //should check (fmax % 4 == 3)
-        tot = get0dp(1);
-        seq = get0dp(2);
-        viewcnt = 4 * (seq - 1);
-        gpsat[cidx].nsats = get0dp(3);
-        for (j = 4; j < 20 && j < fmax; j += 4) {
-            i = get0dp(j);
-            if (!i)
-                return 1;
-            gpsat[cidx].view[viewcnt++] = i;
-            gpsat[cidx].el[i] = get0dp(j + 1);
-            gpsat[cidx].az[i] = get0dp(j + 2);
-            gpsat[cidx].sn[i] = get0dp(j + 3);
+        tot = getndp(field[1], 0);
+        seq = getndp(field[2], 0);
+        if (satype == 'P') {
+            if (seq == 1)
+                for (j = 0; j < 65; j++)
+                    gpsat[cidx].view[j] = 0;
+            gpsat[cidx].pnsats = getndp(field[3], 0);
+            gpsat[cidx].psatset &= (1 << tot) - 1;
+            gpsat[cidx].psatset &= ~(1 << (seq - 1));
         }
-        gpsat[cidx].satset &= (1 << tot) - 1;
-        gpsat[cidx].satset &= ~ (1 << (seq-1));
-	if( !gpsat[cidx].satset ) {
-	    int n , m, k;
-	    gpst[cidx].nsats = gpsat[cidx].nsats;
-	    gpst[cidx].nused = gpsat[cidx].nused;
-	    for (n = 0; n < gpsat[cidx].nsats; n++) {
-	        m = gpsat[cidx].view[n];
-		gpst[cidx].sats[n].num = m;
-		gpst[cidx].sats[n].el = gpsat[cidx].el[m];
-		gpst[cidx].sats[n].az = gpsat[cidx].az[m];
-		gpst[cidx].sats[n].sn = gpsat[cidx].sn[m];
-		for (k = 0; k < 12; k++)
-		    if (gpsat[cidx].sats[k] == m)
-		        break;
-		if( k < 12 )
-		    gpst[cidx].sats[n].num = -m;
-	    }
-	}
-    } else if (fmax == 18 && !strcmp(field[0], "GSA")) {
-        gpsat[cidx].satset = 255;
-        gpst[cidx].fix = get0dp(2);
-	gpsat[cidx].nused = 0;
-        for (i = 3; i < 15; i++) {
-            gpsat[cidx].sats[i] = get0dp(i);
-	    if( gpsat[cidx].sats[i] )
-	        gpsat[cidx].nused++;
-	    // else break;?
-	}
-        gpst[cidx].pdop = get3dp(15);
-        gpst[cidx].hdop = get3dp(16);
-        gpst[cidx].vdop = get3dp(17);
+        else {
+            if (seq == 1)
+                for (j = 65; j < 100; j++)
+                    gpsat[cidx].view[j] = 0;
+            gpsat[cidx].lnsats = getndp(field[3], 0);
+            gpsat[cidx].lsatset &= (1 << tot) - 1;
+            gpsat[cidx].lsatset &= ~(1 << (seq - 1));
+        }
+
+        for (j = 4; j < 20 && j < fmax; j += 4) {
+            i = getndp(field[j], 0);
+            if (!i)
+                break;
+            gpsat[cidx].view[i] = 1;
+            gpsat[cidx].el[i] = getndp(field[j + 1], 0);
+            gpsat[cidx].az[i] = getndp(field[j + 2], 0);
+            gpsat[cidx].sn[i] = getndp(field[j + 3], 0);
+        }
+        int n;
+        if (satype == 'P' && !gpsat[cidx].psatset) {
+            gpst[cidx].pnsats = 0;
+            gpst[cidx].pnused = 0;
+            for (n = 0; n < 65; n++) {
+                if (gpsat[cidx].view[n]) {
+                    int k = gpst[cidx].pnsats++;
+                    gpst[cidx].psats[k].num = n;
+                    gpst[cidx].psats[k].el = gpsat[cidx].el[n];
+                    gpst[cidx].psats[k].az = gpsat[cidx].az[n];
+                    gpst[cidx].psats[k].sn = gpsat[cidx].sn[n];
+                    if (gpsat[cidx].used[n]) {
+                        gpst[cidx].pnused++;
+                        gpst[cidx].psats[k].num = -n;
+                    }
+                    else
+                        gpst[cidx].psats[k].num = n;
+                }
+            }
+        }
+        // else
+        if (satype == 'L' && !gpsat[cidx].lsatset) {
+            gpst[cidx].lnsats = 0;
+            gpst[cidx].lnused = 0;
+            for (n = 65; n < 99; n++) {
+                if (gpsat[cidx].view[n]) {
+                    int k = gpst[cidx].lnsats++;
+                    gpst[cidx].lsats[k].num = n;
+                    gpst[cidx].lsats[k].el = gpsat[cidx].el[n];
+                    gpst[cidx].lsats[k].az = gpsat[cidx].az[n];
+                    gpst[cidx].lsats[k].sn = gpsat[cidx].sn[n];
+                    if (gpsat[cidx].used[n]) {
+                        gpst[cidx].lnused++;
+                        gpst[cidx].lsats[k].num = -n;
+                    }
+                    else
+                        gpst[cidx].lsats[k].num = n;
+                }
+            }
+        }
+    }
+    else if (fmax == 18 && !strcmp(field[0], "GSA")) {
+        gpst[cidx].fix = getndp(field[2], 0);
+        gpst[cidx].pdop = getndp(field[15], 3);
+        gpst[cidx].hdop = getndp(field[16], 3);
+        gpst[cidx].vdop = getndp(field[17], 3);
+
+        int j = getndp(field[3], 0);
+        if (j && j < 65) {
+            gpsat[cidx].psatset = 255;
+            for (i = 0; i < 65; i++)
+                gpsat[cidx].used[i] = 0;
+            gpsat[cidx].pnused = 0;
+            for (i = 3; i < 15; i++) {
+                int j = getndp(field[i], 0);
+                if (j) {
+                    gpsat[cidx].used[j]++;
+                    gpsat[cidx].pnused++;
+                }
+                // else break;?
+            }
+        }
+        if (j && j > 64) {
+            gpsat[cidx].lsatset = 255;
+            for (i = 65; i < 100; i++)
+                gpsat[cidx].used[i] = 0;
+            gpsat[cidx].lnused = 0;
+            for (i = 3; i < 15; i++) {
+                int j = getndp(field[i], 0);
+                if (j) {
+                    gpsat[cidx].used[j]++;
+                    gpsat[cidx].lnused++;
+                }
+                // else break;?
+            }
+        }
     }
 #if 0
     else
         printf("?%s\n", field[0]);
 #endif
-    if( bestgps != cidx )
+    if (bestgps != cidx)
         return 1;
 
     if (!gpst[cidx].mo || !gpst[cidx].dy)
         return 1;
     // within 24 hours, only when gpst[cidx].lock since two unlocked GPS can have different times
     // only when sc < 30 to avoid bestgps jitter (5:00->4:59) causing a hiccup
-    if (kmlinterval && gpst[cidx].lock && gpst[cidx].sc < 30 
-        && kmmn != (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval) {
+    if (kmlinterval && gpst[cidx].lock && gpst[cidx].sc < 30 && kmmn != (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval) {
         kmmn = (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval;
         rotatekml();
         logfd = fopen("current.kml", "w+b");
-	if( logfd ) {
-        fprintf(logfd, kmlhead, kmlname, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000), 
-                gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gtrk / 1000,
-          gpst[cidx].gtrk % 1000);
-        fflush(logfd);
-	}
+        if (logfd) {
+            fprintf(logfd, kmlhead, kmlname, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000),
+              gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gtrk / 1000, gpst[cidx].gtrk % 1000);
+            fflush(logfd);
+        }
     }
     if (kmlsc == gpst[cidx].sc && kmscth == gpst[cidx].scth)
         return 1;
-    if (!gpst[cidx].llat && !gpst[cidx].llon)         // time, but no location
+    if (!gpst[cidx].llat && !gpst[cidx].llon)   // time, but no location
         return 1;
 
     if (kmlsc != gpst[cidx].sc) {
-	if( !kmlinterval || !logfd )
-		return 1;
+        if (!kmlinterval || !logfd)
+            return 1;
 
         kmlsc = gpst[cidx].sc;
 
         //sprint then fputs in dokmltail to make it a unitary write
         //(otherwise current.kml may be read as a partial)
-        sprintf(&kmlstr[kmlful], pmarkfmt, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000),
-                gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gspd / 1000, gpst[cidx].gspd % 1000,  // first and last
+        sprintf(&kmlstr[kmlful], pmarkfmt, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000), gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gspd / 1000, gpst[cidx].gspd % 1000,        // first and last
           gpst[cidx].yr, gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
         kmlful = strlen(kmlstr);
     }
 
     kmscth = gpst[cidx].scth;
-    sprintf(&kmlstr[kmlful], "%d.%06d,%d.%06d,%d.%03d\n", gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000), 
-            gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gspd / 1000, gpst[cidx].gspd % 1000);
+    sprintf(&kmlstr[kmlful], "%d.%06d,%d.%06d,%d.%03d\n", gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000),
+      gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gspd / 1000, gpst[cidx].gspd % 1000);
     kmlful = strlen(kmlstr);
 
     if (kmlful > BUFLEN / 2)
@@ -508,45 +536,46 @@ int getgpsinfo(int chan, char *buf, int msclock)
     return 2;
 }
 
-void findbestgps() {
+void findbestgps()
+{
     // find size of list
-    for( cidx = 0 ; cidx < MAXSRC; cidx++ )
-        if( gpst[cidx].gpsfd == -2 )  // found or EOL
+    for (cidx = 0; cidx < MAXSRC; cidx++)
+        if (gpst[cidx].gpsfd == -2)     // found or EOL
             break;
 
-    while( cidx > 0 && gpst[cidx - 1].gpsfd == -1 )
-        gpst[--cidx].gpsfd = -2; // shorten table if possible
+    while (cidx > 0 && gpst[cidx - 1].gpsfd == -1)
+        gpst[--cidx].gpsfd = -2;        // shorten table if possible
 
-    if( !cidx )
+    if (!cidx)
         return;
 
-    int i, mxlock = gpst[bestgps].lock, mxfix= gpst[bestgps].fix, mnpdop=9999, currbest = bestgps;
+    int i, mxlock = gpst[bestgps].lock, mxfix = gpst[bestgps].fix, mnpdop = 9999, currbest = bestgps;
     // empty stale entries
-    for( i = 0 ; i < cidx; i++ ) {
-        if( gpst[i].gpsfd >= 0 && (100000 + thisms - gpst[i].lastseen) % 100000 > 1250 ) {
-            memset( &gpst[i], 0, sizeof(gpst[i]) ); // clear to avoid stale data when back online
-            memset( &gpsat[i], 0, sizeof(gpsat[i]) );
+    for (i = 0; i < cidx; i++) {
+        if (gpst[i].gpsfd >= 0 && (100000 + thisms - gpst[i].lastseen) % 100000 > 1250) {
+            memset(&gpst[i], 0, sizeof(gpst[i]));       // clear to avoid stale data when back online
+            memset(&gpsat[i], 0, sizeof(gpsat[i]));
             gpst[i].gpsfd = -1; // stale
             continue;
         }
-        if( gpst[i].lock < mxlock )
+        if (gpst[i].lock < mxlock)
             continue;
-        if( gpst[i].lock > mxlock ) { // prefer dgps/sbas
+        if (gpst[i].lock > mxlock) {    // prefer dgps/sbas
             currbest = i;
             mxlock = gpst[i].lock;
             mxfix = gpst[i].fix;
             continue;
         }
         // equal locks, check fix
-        if( gpst[i].fix < mxfix )
+        if (gpst[i].fix < mxfix)
             continue;
-        if( gpst[i].fix > mxfix ) {
+        if (gpst[i].fix > mxfix) {
             currbest = i;
             mxfix = gpst[i].fix;
             mnpdop = gpst[i].pdop;
             continue;
         }
-        if( gpst[i].pdop >= mnpdop )
+        if (gpst[i].pdop >= mnpdop)
             continue;
         mnpdop = gpst[i].pdop;
         // better fix, better pdop
