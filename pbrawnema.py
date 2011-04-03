@@ -6,6 +6,10 @@ import os
 import time
 import zipfile
 
+if len(sys.argv) < 2 :
+	print "Usage: pbrawnema.py {list of raw nmea files}"
+	exit(1)
+
 out = socket.create_connection(('localhost',2947))
 
 for fl in sys.argv:

@@ -6,6 +6,10 @@ import os
 import time
 import zipfile
 
+if len(sys.argv) < 2 :
+	print "Usage: playback.py {list of kmz or kml logs from webgpsd}"
+	exit(1)
+
 out = socket.create_connection(('localhost',2947))
 
 for fl in sys.argv:

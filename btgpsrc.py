@@ -22,6 +22,10 @@ def create_device_error(error):
         exit(-1)
 
 if __name__ == '__main__':
+        if len(sys.argv) < 2 :
+		print "Usage: btgpsrc.py bt:ad:dr:es:ss:hx [pin-if-not-0000]"
+		exit(1)
+
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 	bus = dbus.SystemBus()
 	manager = dbus.Interface(bus.get_object("org.bluez", "/"), "org.bluez.Manager")

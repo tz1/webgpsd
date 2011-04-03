@@ -8,7 +8,11 @@ import time
 out = socket.create_connection(('localhost',2947))
 
 if len(sys.argv) > 1 :
-        ser = open( sys.argv[1], "r")
+	try:
+		ser = open( sys.argv[1], "r")
+	except:
+		print "Usage: devgpsrc.py [/dev/if/not/stdin]"
+		exit(1)
         nodeid = sys.argv[1][-4]
         ms = str(int(time.time()*1000%100000))
         out.send(":ANOB"+nodeid+":"+ms+":"+sys.argv[1]+"\n")

@@ -10,6 +10,7 @@ gps source scripts
     devgpsrc.py /dev/ttyACMn
     devgpsrc.py # stdin
     playback.py <list of kmz or kml files written by webgps>
+    pbrawnema.py rawfiles # playback text captures of NMEA
 
 web page templates:
     dogmap.html
