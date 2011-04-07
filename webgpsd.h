@@ -64,7 +64,7 @@ struct harley {
 };
 #endif
 
-#define MAXSRC (16)
+#define MAXSRC (8)
 extern int bestgps;
 extern struct gpsstate gpst[MAXSRC];
 extern struct gpssats gpsat[MAXSRC];

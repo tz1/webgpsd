@@ -3,8 +3,8 @@
 #include <sys/termios.h>
 
 int bestgps = 0;
-struct gpsstate gpst[16];
-struct gpssats gpsat[16];
+struct gpsstate gpst[MAXSRC];
+struct gpssats gpsat[MAXSRC];
 
 FILE *errfd = NULL;
 FILE *logfd = NULL;

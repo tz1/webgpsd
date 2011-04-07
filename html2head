@@ -1,5 +1,6 @@
 #!/bin/sh
-echo static char $1[] = >$1.h
-sed -e 's/"/\\"/g' -e 's/.*/"&\\n"/' <$2 >>$1.h
-echo \; >>$1.h
+base=`echo $1 | sed -e "s/[.].*//g"`
+echo static char $base[] = >$1
+sed -e 's/"/\\"/g' -e 's/.*/"&\\n"/' <$1tml >>$1
+echo \; >>$1
 

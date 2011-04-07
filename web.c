@@ -1,7 +1,7 @@
 #include "webgpsd.h"
 
 // web pages from HTML templat'es
-#include "dogmaphtml.h"
+#include "dogmap.h"
 #include "satstat.h"
 #include "radfmt.h"
 
@@ -186,9 +186,9 @@ void dongjson()
 }
 
 // Google Map - self contained, uses web json
-static void dogmap()
+static void dogmapx()
 {
-    strcpy(xbuf, dogmaphtml);
+    strcpy(xbuf, dogmap);
 }
 
 // Wunderground.com severe weather radar, mostly self-contained with refreshing
@@ -283,7 +283,7 @@ void dowebget()
     else if (strstr(xbuf, "gpsdata.xml"))
         doxml();
     else if (strstr(xbuf, "dogmap.html"))
-        dogmap();
+        dogmapx();
     else if ((c = strstr(xbuf, "radar"))) {
         c += 5;
         int i = atoi(c);

@@ -13,16 +13,10 @@ all: webgpsd
 webgpsd: $(OBJS)
 	gcc -o $@ $^ $(LIBS)
 
-web.o: web.c satstat.h dogmaphtml.h radfmt.h
+web.o: web.c satstat.h dogmap.h radfmt.h
 
-radfmt.h: radfmt.html
-	./html2head radfmt $<
-
-satstat.h: satstat.html
-	./html2head satstat $<
-
-dogmaphtml.h: dogmap.html
-	./html2head dogmaphtml $<
+%.h : %.html
+	./html2head $@
 
 clean:
-	rm -f webgpsd $(OBJS) kml2kmz dogmaphtml.h satstat.h radfmt.h *~
+	rm -f webgpsd $(OBJS) kml2kmz dogmap.h satstat.h radfmt.h *~
