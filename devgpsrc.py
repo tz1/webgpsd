@@ -5,7 +5,8 @@ import socket
 import os
 import time
 
-out = socket.create_connection(('localhost',2947))
+out = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+out.connect(('localhost',2947))
 
 if len(sys.argv) > 1 :
 	try:

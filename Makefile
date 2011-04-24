@@ -11,7 +11,7 @@ OBJS:= gpsdata.o webgpsd.o web.o kmlzipper.o harley.o
 all: webgpsd
 
 webgpsd: $(OBJS)
-	gcc -o $@ $^ $(LIBS)
+	$(CC) -o $@ $^ $(LIBS)
 
 web.o: web.c satstat.h dogmap.h radfmt.h hogstat.h
 
