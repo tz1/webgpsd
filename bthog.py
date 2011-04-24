@@ -41,7 +41,7 @@ if __name__ == '__main__':
 	btaddr = sys.argv[1];
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 	bus = dbus.SystemBus()
-	apath = "/test/gpsagent"
+	apath = "/test/hogagent"
 	agent = Agent(bus, apath)
 	manager = dbus.Interface(bus.get_object("org.bluez", "/"), "org.bluez.Manager")
 	adapter = dbus.Interface(bus.get_object("org.bluez", manager.DefaultAdapter()), "org.bluez.Adapter")
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 			continue;
 
 		ms = str(int(time.time()*1000%100000))
-		out.send(":ANOBG"+nodeid+":"+ms+":"+btaddr+"\n")
+		out.send(":ANOBH"+nodeid+":"+ms+":"+btaddr+"\n")
 
 		dat = ser.readline() #toss the first one
 		while(1):
@@ -82,7 +82,7 @@ if __name__ == '__main__':
 			if( 0 == len(dat) ):
 				break;
 			ms = str(int(time.time()*1000%100000))
-			ln = ":GPSB"+nodeid+":"+ms+":"+dat
+			ln = ":HOGB"+nodeid+":"+ms+":"+dat
 			out.send(ln)
 		#except: #bt conn broken
 		print node +" Disconnect"

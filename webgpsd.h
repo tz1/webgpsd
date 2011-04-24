@@ -56,7 +56,7 @@ struct gpssats {
     int used[100], view[100]; // list of used, inview
     int el[100], az[100], sn[100];
 };
-#if 0
+#ifdef HARLEY
 struct harley {
     int rpm, vspd, full, gear, clutch, neutral, engtemp, turnsig, odoaccum, fuelaccum;
     int odolastms, fuellastms;
@@ -85,7 +85,6 @@ extern char *rtname;
 //FUNCTIONS
 // process data from device
 int getgpsinfo(int fd, char *, int);
-void addnmeacksum(char *c);
 void findbestgps(void);
 
 //web subfunctions

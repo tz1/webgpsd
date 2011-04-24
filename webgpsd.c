@@ -1,3 +1,9 @@
+// CONFIG
+static char *pidlockfile = "/tmp/webgpsd.pid";
+static char *logdirprefix = "/tmp/";
+int kmlinterval = 5;
+static int gpsdport = 2947;
+
 #include "webgpsd.h"
 #include <errno.h>
 #include <sys/termios.h>
@@ -9,9 +15,6 @@ struct gpssats gpsat[MAXSRC];
 FILE *errfd = NULL;
 FILE *logfd = NULL;
 char *xbuf;
-
-//config params
-int kmlinterval = 5;
 
 extern void add2kml(char *);
 
@@ -158,7 +161,7 @@ static void doraw(char *str)
     }
 }
 
-extern void dongjson(void);
+//extern void dongjson(void);
 
 static void dowatch()
 {
@@ -171,7 +174,7 @@ static void dowatch()
         if (watch[i] == 1)
             prtgpsinfo(i, oy);
     }
-    dongjson();
+    //    dongjson();
     int n = strlen(xbuf);
     for (i = 0; i < amax; i++) {
         if (acpt[i] == -1)
@@ -185,7 +188,6 @@ static void dowatch()
     }
 }
 
-static char *pidlockfile = "/tmp/webgpsd.pid";
 static void teardown(int signo)
 {
     fprintf(errfd, "Shutdown\n");
@@ -199,20 +201,11 @@ static void teardown(int signo)
     exit(0);
 }
 
-static int gpsdport = 2947;
-static int httpport = 8888;
-//static char *logdirprefix = "/var/log/";
-
 char *rtname = "WebGPSD";
 
 #include <resolv.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-
-static void getconfig()
-{
-    chdir("/tmp");
-}
 
 static int pilock(void)
 {
@@ -255,7 +248,7 @@ static void dobindlstn(int *sock, int port)
         exit(-1);
 }
 
-static void initfromlocal()
+static void primelocaltime()
 {
     char sessdir[256];
     struct timeval tv;
@@ -342,16 +335,55 @@ static void reapkid(int signo)
     signal(SIGCHLD, reapkid);
 }
 
+void usage(char *errstr) {
+    printf( "%s\nUsage:\nwebgpsd -X param\n"
+	    "-k path-to-pid-lockfile\n"
+	    "-l path-to-log-directory\n"
+	    "-i MINUTES (5) for kml split interval\n"
+	    "-p PORT (2947)\n"
+	    "-h print this and exit\n", errstr);
+    exit(1);
+}
+
 //static int lasmn = -1;
 int main(int argc, char *argv[])
 {
     int n, i;
-    int lstn = -1, lweb = -1, lmax = 0;
+    int lstn = -1, lmax = 0;
     fd_set fds, fds2, fdserr, lfds;
     struct sockaddr_in sin;
     char buf[512];
     //    struct timeval tv;
     unsigned int mainlock = 0;
+
+    for( n = 1; n < argc; n++ ) {
+	if( argv[n][0] != '-' )
+	    usage("invalid parameter format");
+	switch( argv[n][1] ) {
+	case 'k':
+	    pidlockfile = argv[++n];
+	    break;
+	case 'l':
+	    logdirprefix = argv[++n];
+	    break;
+	case 'h':
+	    usage("");
+	    break;
+	case 'i':
+	    kmlinterval = atoi(argv[++n]);
+	    if( kmlinterval <= 0 )
+		usage("invalid kml split interval");
+	    break;
+	case 'p':
+	    gpsdport = atoi(argv[++n]);
+	    if( gpsdport <= 0 || gpsdport > 65535 )
+		usage("invalid port");
+	    break;
+	default:
+	    usage("invalid parameter");
+	    break;
+	}
+    }
 
     if (!geteuid()) {
         fprintf(stderr, "Don't run as root!\n");
@@ -367,7 +399,8 @@ int main(int argc, char *argv[])
     fprintf(errfd, "Startup\n");
     fflush(errfd);
 
-    getconfig();
+    // get config here
+    chdir( logdirprefix );
 
     for (n = 0; n < MAXCONN; n++)
         acpt[n] = -1;
@@ -379,9 +412,8 @@ int main(int argc, char *argv[])
     sin.sin_family = AF_INET;
 
     dobindlstn(&lstn, gpsdport);
-    dobindlstn(&lweb, httpport);
 
-    initfromlocal();
+    primelocaltime();
 
     xbuf = malloc(BUFLEN);
 
@@ -398,17 +430,12 @@ int main(int argc, char *argv[])
     signal(SIGCHLD, reapkid);
 
     listen(lstn, 3);
-    listen(lweb, 3);
 
     lmax = lstn;
-    if (lweb > lmax)
-        lmax = lweb;
-
     FD_ZERO(&lfds);
     FD_SET(lstn, &lfds);
-    FD_SET(lweb, &lfds);
 
-    fprintf(errfd, "listen g=%d w=%d\n", lstn, lweb);
+    fprintf(errfd, "listen g=%d\n", lstn);
 
     for (;;) {                  // main server loop
         fds = lfds;
@@ -424,8 +451,6 @@ int main(int argc, char *argv[])
             continue;
 
         /* accept new command connections */
-        if (FD_ISSET(lweb, &fds))
-            doaccept(lweb);
         if (FD_ISSET(lstn, &fds))
             doaccept(lstn);
 
@@ -485,16 +510,14 @@ int main(int argc, char *argv[])
                     kmlanno(buf);
                     continue;
                 }
-#if 0
+#ifdef HARLEY
                 if (!strncmp(buf, ":HOG", 4)) {
+extern void calchog(char *outb, int mstime);
                     getms();
-                    calchog(buf, thisms);
+		    char *c = strchr( buf, 'J' );
+                    calchog(c, thisms);
                     sprintf(xbuf, "<!--%05dg( %s )-->\n", thisms, buf);
                     add2kml(xbuf);      //decoded version
-                    continue;
-                }
-                if (!strncmp(buf, ":OBD", 4)) {
-                    kmlanno(buf);
                     continue;
                 }
 #endif

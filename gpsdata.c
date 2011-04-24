@@ -32,20 +32,6 @@ static char kmltail[] = "</coordinates></LineString></Placemark>\n</Document>\n"
 
 static char *field[100];        // expanded to 100 for G-Rays PUBX03
 
-void addnmeacksum(char *c)
-{
-    int i = 0;
-    char *d = c;
-    d += strlen(d);
-    *d++ = '*';
-    *d = 0;
-    c++;
-    while (*c && *c != '*')
-        i ^= *c++;
-    i &= 0xff;
-    sprintf(++c, "%02X", i);
-}
-
 static int get2(char *c)
 {
     int i = 0;
@@ -589,5 +575,6 @@ void findbestgps()
         // better fix, better pdop
         currbest = i;
     }
+    // should add weighting and hysteresis
     bestgps = currbest;
 }

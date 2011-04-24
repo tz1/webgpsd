@@ -1,0 +1,77 @@
+<html>
+  <head><title>Satellite Status</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <style>html {margin:0px;padding:0px;border:0px }</style>
+    <style>body {margin:0px;padding:0px;border:0px }</style>
+    <script type="text/javascript">
+var canv,rq,xh,wd,ht
+var pi2 = Math.PI*2
+var r2d = pi2/360
+var mx = 240;
+function dodraw() {
+    var elem = document.getElementById('myCanvas')
+    canv = elem.getContext('2d')
+    wd = window.innerWidth
+    ht = window.innerHeight
+    canv.canvas.width = wd
+    canv.canvas.height = ht
+    mx = ht;
+    if( wd < mx )
+      mx = wd;
+    canv.fillStyle = '#000'
+    canv.fillRect(0,0, wd,ht)
+    xh=new XMLHttpRequest()
+    setTimeout(update, 100)
+}
+
+function update() {
+    if( wd != window.innerWidth ||
+        ht != window.innerHeight ) {
+        wd = window.innerWidth
+        ht = window.innerHeight
+        mx = ht;
+        if( wd < mx )
+            mx = wd;
+        canv.canvas.width = wd
+        canv.canvas.height = ht
+    }
+//  canv.clearRect(0,0,wd,ht)
+    xh.open("GET","x.hog", false)
+    xh.send()
+    hog = eval('('+xh.responseText+')', null)
+    canv.fillStyle = '#000'
+    canv.fillRect(0, 0, wd,ht)
+    canv.textAlign="center"
+    canv.textBaseline="middle"
+
+    r = mx/2
+    canv.lineWidth = r/50
+    canv.strokeWidth = r/50
+    var v = r/10
+    canv.font = v +"px sans-serif"
+    canv.fillStyle = '#fff'
+
+    var line=1;
+    canv.fillText(hog.rpm/4+" RPM", r, line++* v)
+    canv.fillText(hog.speed/128.0/1.6+" SPD", r, line++* v)
+    canv.fillText(hog.full+" FULL", r, line++* v)
+    canv.fillText(hog.gear+" GEAR", r, line++* v)
+    canv.fillText(hog.clutch+" CLUT", r, line++* v)
+    canv.fillText(hog.neutral+" NEUT", r, line++* v)
+    canv.fillText(hog.temp+" TEMP", r, line++* v)
+    canv.fillText(hog.turn+" TURN", r, line++* v)
+    canv.fillText(hog.odo+" ODO", r, line++* v)
+    canv.fillText(hog.fuel+" FUEL", r, line++* v)
+
+    setTimeout(update, 50)
+}
+</script>
+  </head>
+  <body onload="dodraw()">
+    <div width: 100%; height: 100%; margin: 0px>
+      <a href=/><canvas id="myCanvas">No Canvas.</a>
+    </div>
+  </body>
+</html>

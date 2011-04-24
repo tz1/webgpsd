@@ -1,4 +1,28 @@
-#include "minigpsd.h"
+#ifdef HARLEY
+#include "webgpsd.h"
+#if 0
+#include <string.h>
+#include <stdio.h>
+
+struct harley {
+    int rpm, vspd, full, gear, clutch, neutral, engtemp, turnsig, odoaccum, fuelaccum;
+    int odolastms, fuellastms;
+    int odolastval, fuellastval;
+};
+#endif
+void addnmeacksum(char *c)
+{
+    int i = 0;
+    char *d = c;
+    d += strlen(d);
+    *d++ = '*';
+    *d = 0;
+    c++;
+    while (*c && *c != '*')
+        i ^= *c++;
+    i &= 0xff;
+    sprintf(++c, "%02X", i);
+}
 
 static int crc(int *data, int len)
 {
@@ -24,7 +48,7 @@ static int crc(int *data, int len)
 
 static unsigned short odolast = 0, fuellast = 0;
 
-extern struct harley hstat;
+struct harley hstat;
 
 void calchog(char *outb, int mstime)
 {
@@ -77,16 +101,16 @@ void calchog(char *outb, int mstime)
 
     y = hex[4] << 8 | hex[5];
 
-    if (x == 0x281b1002) {
+    if (x == 0x281b1002) { // rpm * 4
         sprintf(outb, "$PDRPM,%d.%02d,", y / 4, y % 4 * 25);
         hstat.rpm = y * 250;
-    } else if (x == 0x48291002) {
+    } else if (x == 0x48291002) { // kph*128
         sprintf(outb, "$PDSPD,%d.%03d,", y / 200, y % 200 * 5);
         hstat.vspd = y * 5;
-    } else if (x == 0xa8491010) {
+    } else if (x == 0xa8491010) { // temp, deg F
         sprintf(outb, "$PDHOT,%d,", hex[4]);
         hstat.engtemp = hex[4];
-    } else if (x == 0xa83b1003) {
+    } else if (x == 0xa83b1003) { // gear
         y = hex[4];
         j = 0;
         if (y)
@@ -96,11 +120,11 @@ void calchog(char *outb, int mstime)
             j = -1;
         sprintf(outb, "$PDGER,%d,", j);
         hstat.gear = j;
-    } else if (x == 0x48da4039 && (hex[4] & 0xfc) == 0) {
+    } else if (x == 0x48da4039 && (hex[4] & 0xfc) == 0) { // turn signals
         char turns[] = "NRLB";
         sprintf(outb, "$PDSGN,%c,", turns[hex[4]]);
         hstat.turnsig = hex[4];
-    } else if ((x & 0xffffff7f) == 0xa8691006) {
+    } else if ((x & 0xffffff7f) == 0xa8691006) { // odo, 40cm/tick, 
         if (!(x & 0x80)) {
             hstat.odolastval = y;
             hstat.odolastval -= odolast;
@@ -114,13 +138,13 @@ void calchog(char *outb, int mstime)
             sprintf(outb, "$PDODO,%d,%d,", hstat.odolastval, hstat.odolastms);
             odolast = y;
             hstat.odolastms = mstime;
-        } else {
+        } else { // count overflow
             odolast = 0;
             hstat.odolastms = mstime;
             hstat.odoaccum = 0;
             sprintf(outb, "$PDODO,-0,-0,");
         }
-    } else if ((x & 0xffffff7f) == 0xa883100a) {
+    } else if ((x & 0xffffff7f) == 0xa883100a) { // fuel, 0.04ml/tick
         if (!(x & 0x80)) {
             hstat.fuellastval = y;
             hstat.fuellastval -= fuellast;
@@ -140,10 +164,10 @@ void calchog(char *outb, int mstime)
             hstat.fuelaccum = 0;
             sprintf(outb, "$PDFUL,-0,-0,");
         }
-    } else if ((x & 0xffffffff) == 0xa8836112 && (hex[4] & 0xd0) == 0xd0) {
+    } else if (x == 0xa8836112 && (hex[4] & 0xd0) == 0xd0) { // fuel gauge, level
         sprintf(outb, "$PDGAS,%d,", hex[4] & 0x0f);
         hstat.full = hex[4] & 0x0f;
-    } else if ((x & 0xffffff5d) == 0x483b4000) {
+    } else if ((x & 0xffffff5d) == 0x483b4000) { // clutch, neutral
         sprintf(outb, "$PDCLU,");
         hstat.neutral = !!(hex[3] & 0x20);    // ! & 0x02
         hstat.clutch = !!(hex[3] & 0x80);
@@ -189,3 +213,4 @@ void calchog(char *outb, int mstime)
     addnmeacksum(outb);
 
 }
+#endif

@@ -4,6 +4,9 @@
 #include "dogmap.h"
 #include "satstat.h"
 #include "radfmt.h"
+#ifdef HARLEY
+#include "hogstat.h"
+#endif
 
 // kml network link feed for google earth
 static char gpskml[] = "<Document>"
@@ -53,7 +56,23 @@ static void doxml()
     sprintf(xbuf, xmldata, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000),
       gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000));
 }
+#ifdef HARLEY
+static void dohogstat()
+{
+    strcpy(xbuf, hogstat);
+}
+extern struct harley hstat;
+// JSON for web - generally NOT gpsd-ng (that will go into the mainline)
+static char hogdata[] =
+    "{rpm:%d,speed:%d,full:%d,gear:%d,clutch:%d,neutral:%d,temp:%d,turn:%d,odo:%d,fuel:%d}\r\n";
 
+static void dohog()
+{
+    sprintf(xbuf, hogdata,
+	    hstat.rpm, hstat.vspd, hstat.full, hstat.gear, hstat.clutch, hstat.neutral,
+	    hstat.engtemp, hstat.turnsig, hstat.odoaccum, hstat.fuelaccum);
+}
+#endif
 // JSON for web - generally NOT gpsd-ng (that will go into the mainline)
 static char jsondata[] =
   "{lat:%d.%06d,lon:%d.%06d,alt:%d.%03d,pdop:%d.%02d,hdop:%d.%02d,vdop:%d.%02d,track:%d.%03d,speed:%d.%03d,mode:%d,ns:%d,\r\nu:[";
@@ -68,6 +87,10 @@ static void dojson()
       gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10,
       gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000,
       spd / 1000, spd % 1000, gpst[bestgps].fix, gpst[bestgps].pnsats + gpst[bestgps].lnsats);
+    if( bestgps < 0 || ( !gpst[bestgps].pnsats && ! gpst[bestgps].lnsats)) {
+	 strcat(xbuf, "]}\r\n");
+	 return;
+    }
     int n;
     char cbuf[128];
     for (n = 0; n < gpst[bestgps].pnsats; n++) {
@@ -122,7 +145,7 @@ static void dojson()
     strcat(xbuf, "]}\r\n");
 
 }
-
+#if 0
 // JSON gpsd-ng watch format
 char ngsjson0[] = "{\"class\":\"SKY\",\"tag\":\"GSV\",\"vdop\":%d.%02d,\"hdop\":%d.%02d,\"pdop\":%d.%02d,\"satellites\":[";
 char ngsjson1[] = "{\"PRN\":%d,\"el\":%d,\"az\":%d,\"ss\":%d,\"used\":%s},";
@@ -182,8 +205,8 @@ void dongjson()
     c--;
     *c = 0;                     // trailing comma
     strcat(c, "]}\r\n");
-
 }
+#endif
 
 // Google Map - self contained, uses web json
 static void dogmapx()
@@ -207,6 +230,7 @@ static char gpspage1[] =        // menu
   "<table><tr><td>"
   "\n<table border=1>"
   "<tr><td><a href=/dogmap.html><h1><br>MAP<br><br></a>"
+  "<tr><td><a href=/hogstat.html><h1><br>HOG<br><br></a>"
   "<tr><td><a href=/sats.html><h1><br>SatStat<br><br></a>" "<tr><td><a href=/radar20.html><h1><br>RADAR<br><br></a>" "</table>\n";
 
 static char gpspage2[] =        // source status
@@ -276,8 +300,16 @@ void dowebget()
     char *c;
     if (strstr(xbuf, "kml"))
         dokml(xbuf);
+#if 0
     else if (strstr(xbuf, "ngjson"))
         dongjson();
+#endif
+#ifdef HARLEY
+    else if (strstr(xbuf, "hogstat"))
+        dohogstat();
+    else if (strstr(xbuf, "hog"))
+        dohog();
+#endif
     else if (strstr(xbuf, "json"))
         dojson();
     else if (strstr(xbuf, "gpsdata.xml"))
