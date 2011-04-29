@@ -37,7 +37,7 @@ function update() {
         canv.canvas.width = wd
         canv.canvas.height = ht
     }
-//  canv.clearRect(0,0,wd,ht)
+
     xh.open("GET","x.json", false)
     xh.send()
     gps = eval('('+xh.responseText+')', null)
@@ -45,8 +45,6 @@ function update() {
     canv.fillRect(0, 0, wd,ht)
     canv.textAlign="center"
     canv.textBaseline="middle"
-//    canv.fillStyle = '#000'
-//    canv.fillRect(0,0,220,220) // extra wide for sig stren squares
 
     r = mx/2
     canv.lineWidth = r/50

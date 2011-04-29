@@ -318,7 +318,8 @@ static void kmlanno(char *buf)
     for (i = 0; i < n; i++)     // clean nonprintable
         if (buf[i] < ' ' || buf[i] > 0x7e)
             buf[i] = '.';
-    sprintf(xbuf, "<!-- %s -->\n", buf);
+
+    sprintf(xbuf, "<!--%05d%s -->\n", thisms, buf);
     strcat(buf, "\r\n");
     add2kml(xbuf);
 }
@@ -516,8 +517,7 @@ extern void calchog(char *outb, int mstime);
                     getms();
 		    char *c = strchr( buf, 'J' );
                     calchog(c, thisms);
-                    sprintf(xbuf, "<!--%05dg( %s )-->\n", thisms, buf);
-                    add2kml(xbuf);      //decoded version
+                    kmlanno(buf);
                     continue;
                 }
 #endif

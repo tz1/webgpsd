@@ -1,15 +1,15 @@
 <html>
-  <head><title>Satellite Status</title>
+  <head><title>Harley Motorcycle Status</title>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-touch-fullscreen" content="yes" />
     <style>html {margin:0px;padding:0px;border:0px }</style>
     <style>body {margin:0px;padding:0px;border:0px }</style>
     <script type="text/javascript">
-var canv,rq,xh,wd,ht
-var pi2 = Math.PI*2
-var r2d = pi2/360
+
+var canv,xh,wd,ht
 var mx = 240;
+
 function dodraw() {
     var elem = document.getElementById('myCanvas')
     canv = elem.getContext('2d')
@@ -37,33 +37,138 @@ function update() {
         canv.canvas.width = wd
         canv.canvas.height = ht
     }
-//  canv.clearRect(0,0,wd,ht)
+
     xh.open("GET","x.hog", false)
     xh.send()
     hog = eval('('+xh.responseText+')', null)
+
     canv.fillStyle = '#000'
     canv.fillRect(0, 0, wd,ht)
-    canv.textAlign="center"
-    canv.textBaseline="middle"
 
     r = mx/2
     canv.lineWidth = r/50
     canv.strokeWidth = r/50
-    var v = r/10
+
+    canv.strokeStyle = '#880'
+    canv.beginPath()
+    canv.moveTo(19*r/10,r)
+    canv.arc(r,r,9*r/10,0,Math.PI,true)
+    canv.lineTo(19*r/10,r)
+    canv.stroke()
+
+    canv.strokeStyle = '#f00'
+    canv.beginPath()
+    canv.moveTo(19*r/10,19*r/10)
+    canv.arc(r,19*r/10,9*r/10,0,Math.PI,true)
+    canv.lineTo(19*r/10,19*r/10)
+    canv.stroke()
+
+    canv.lineWidth = r*4/10
+    canv.strokeWidth = r*4/10
+
+    canv.strokeStyle = '#CC0'
+    canv.beginPath()
+    canv.arc(r,r,7*r/10,Math.PI, Math.PI*(1+hog.speed/120000),false)
+    canv.stroke()
+
+    canv.strokeStyle = '#f00'
+    canv.beginPath()
+    canv.arc(r,19*r/10,7*r/10,Math.PI, Math.PI*(1+hog.rpm/8000000),false)
+    canv.stroke()
+
+
+    canv.fillStyle = '#0f0'
+    if( hog.turn & 1 ) {
+	canv.beginPath()
+	canv.moveTo(19*r/10,3*r/10)
+	canv.lineTo(17*r/10,2*r/10)
+	canv.lineTo(17*r/10,4*r/10)
+	canv.lineTo(19*r/10,3*r/10)
+	canv.fill()
+    }
+    if( hog.turn & 2 ) {
+	canv.beginPath()
+	canv.moveTo(r/10,3*r/10)
+	canv.lineTo(3*r/10,2*r/10)
+	canv.lineTo(3*r/10,4*r/10)
+	canv.lineTo(r/10,3*r/10)
+	canv.fill()
+    }
+
+    canv.lineWidth = r/50
+    canv.strokeWidth = r/50
+
+    if( hog.full > 6 )
+	hog.full = 6;
+    if( hog.full > 2 ) {
+	canv.fillStyle = '#0f0'
+	canv.strokeStyle = '#0f0'
+    }
+    else if( hog.full > 1 ) {
+	canv.fillStyle = '#ff0'
+	canv.strokeStyle = '#ff0'
+    }
+    else {
+	canv.fillStyle = '#f00'
+	canv.strokeStyle = '#f00'
+    }
+    canv.beginPath()
+    canv.moveTo(17*r/10,r)
+    canv.lineTo(19*r/10,r)
+    canv.lineTo(19*r/10,12*r/10)
+    canv.lineTo(17*r/10,12*r/10)
+    canv.lineTo(17*r/10,r)
+    canv.stroke()
+
+    full = (6 - hog.full)/3*r/10;
+    canv.beginPath()
+    canv.moveTo(19*r/10,12*r/10)
+    canv.lineTo(17*r/10,12*r/10)
+    canv.lineTo(17*r/10,r+full)
+    canv.lineTo(19*r/10,r+full)
+    canv.lineTo(19*r/10,12*r/10)
+    canv.fill()
+
+    canv.textAlign="center"
+    canv.textBaseline="middle"
+    canv.lineWidth = r/50
+    canv.strokeWidth = r/50
+
+    v = r / 3
     canv.font = v +"px sans-serif"
     canv.fillStyle = '#fff'
 
-    var line=1;
-    canv.fillText(hog.rpm/4+" RPM", r, line++* v)
-    canv.fillText(hog.speed/128.0/1.6+" SPD", r, line++* v)
-    canv.fillText(hog.full+" FULL", r, line++* v)
-    canv.fillText(hog.gear+" GEAR", r, line++* v)
-    canv.fillText(hog.clutch+" CLUT", r, line++* v)
-    canv.fillText(hog.neutral+" NEUT", r, line++* v)
-    canv.fillText(hog.temp+" TEMP", r, line++* v)
-    canv.fillText(hog.turn+" TURN", r, line++* v)
-    canv.fillText(hog.odo+" ODO", r, line++* v)
-    canv.fillText(hog.fuel+" FUEL", r, line++* v)
+    canv.fillText(hog.rpm/1000, r,19*r/10-v/2)
+    canv.fillText(Math.round(hog.speed/1000), r,r-v/2)
+
+// clutch - neutral - gear
+    if( hog.gear == -1 )
+	hog.gear = 0;
+    if( !hog.neutral ) {
+	canv.fillStyle = '#0f0'
+	canv.fillText("N", r/5,r+v/2)
+    }
+    else if( !hog.clut ) {
+	canv.fillStyle = '#f00'
+	canv.fillText(hog.gear, r/5,r+v/2)
+    }
+    else {
+	canv.fillStyle = '#fff'
+	canv.fillText(hog.gear, r/5,r+v/2)
+    }
+
+    v = r / 5
+    canv.font = v +"px sans-serif"
+    canv.fillStyle = '#fff'
+    canv.fillText(hog.temp , 3*r/10, v)
+
+
+//    v = r / 10
+//    canv.font = v +"px sans-serif"
+//    canv.fillStyle = '#fff'
+//    line=10;
+//    canv.fillText(hog.odo+" ODO", r, line++* v)
+//    canv.fillText(hog.fuel+" FUEL", r, line++* v)
 
     setTimeout(update, 50)
 }

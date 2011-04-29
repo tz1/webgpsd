@@ -1,0 +1,24 @@
+
+#CFLAGS+= -g -Wall -I. -DHARLEY
+#CFLAGS+= -O6 -I. -D_GNU_SOURCE -Wall -DHARLEY #-U_FORTIFY_SOURCE # -Wno-attributes
+DEVPFX = /Developer/Platforms/iPhoneOS.platform/Developer
+SDKPFX = $(DEVPFX)/SDKs/iPhoneOS4.3.sdk
+LDFLAGS =  -L$(SDKPFX)/usr/lib  -L$(SDKPFX)/usr/lib/system
+
+CC = $(DEVPFX)/usr/bin/arm-apple-darwin10-gcc-4.2.1
+CFLAGS = -O2 -DHARLEY  -I$(SDKPFX)/usr/include -I$(SDKPFX)/usr/lib/gcc/arm-apple-darwin10/4.2.1/include -F$(SDKPFX)/System/Library/Frameworks
+
+OBJS:= gpsdata.o webgpsd.o web.o kmlzipper.o harley.o
+
+all: webgpsd
+
+webgpsd: $(OBJS)
+	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+
+web.o: web.c satstat.h dogmap.h radfmt.h hogstat.h
+
+%.h : %.html
+	./html2head $@
+
+clean:
+	rm -f webgpsd $(OBJS) kml2kmz dogmap.h satstat.h radfmt.h hogstat.h *~
