@@ -342,6 +342,7 @@ void usage(char *errstr) {
 	    "-l path-to-log-directory\n"
 	    "-i MINUTES (5) for kml split interval\n"
 	    "-p PORT (2947)\n"
+	    "-r (allow run as root)\n"
 	    "-h print this and exit\n", errstr);
     exit(1);
 }
@@ -356,7 +357,7 @@ int main(int argc, char *argv[])
     char buf[512];
     //    struct timeval tv;
     unsigned int mainlock = 0;
-
+    unsigned char rover = 1; // no root run;
     for( n = 1; n < argc; n++ ) {
 	if( argv[n][0] != '-' )
 	    usage("invalid parameter format");
@@ -380,13 +381,16 @@ int main(int argc, char *argv[])
 	    if( gpsdport <= 0 || gpsdport > 65535 )
 		usage("invalid port");
 	    break;
+	case 'r':
+	    rover = 0;
+	    break;
 	default:
 	    usage("invalid parameter");
 	    break;
 	}
     }
 
-    if (!geteuid()) {
+    if (rover && !geteuid()) {
         fprintf(stderr, "Don't run as root!\n");
         exit(-2);
     }

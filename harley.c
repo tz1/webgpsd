@@ -55,38 +55,27 @@ void calchog(char *outb, int mstime)
     int i, j, x;
     unsigned short y;
     int hex[8];
-    char inb[512], *c;
+    char inb[512], *c, *d;
 
-    strcpy(inb, outb);
+    c = outb;
+    while( *c && (*c < '0' || *c > 'F') ) // remove leading J or whatever
+        c++;
+    d = inb;
+    while( *c ) {
+	if( (*c >= '0' || *c <= 'F') )
+	       *d++ = *c;
+	c++;
+    }
+    *d++ = 0;
 #if 0
     // obdpros
     i = sscanf(inb, "%02x %02x %02x %02x %02x %02x %02x %02x",
                );
+#endif
     // AVR
     i = sscanf(inb, "%02x%02x%02x%02x%02x%02x%02x%02x",
                &hex[0], &hex[1], &hex[2], &hex[3], &hex[4], &hex[5], &hex[6], &hex[7]);
-#endif
-    i = 0;
-    c = inb;
-    while( *c && (*c < '0' || *c > 'F') ) // remove leading J or whatever
-        c++;
-
-    for( i = 0 ; i < 8 ; i++ ) {
-        j = sscanf(c, "%02x", &hex[i] );
-        if( !j )
-            break;
-        if( !*c++ )
-            break;
-        if( !*c++ )
-            break;
-        while( *c && *c <= ' ' )
-            c++;
-        if( !*c )
-            break;
-    }
-    if( j )
-        i++;
-
+    
     if (i < 5 || 0xc4 != crc(hex, i)) {
         sprintf(outb, "$PDERR,%d,", i);
         strcat(outb, inb); 
