@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 	    if (iobuf[i] >= 127)
 		break; 
 	iobuf[i] = 0;
-	if( !strlen(iobuf) )
+	if( !strlen((char *)iobuf) )
 	    continue;
 	gettimeofday(&tv, NULL);
 	sprintf( xbuf, ":HOGDJDATA:%03ld:%s\n", tv.tv_usec / 100, iobuf );

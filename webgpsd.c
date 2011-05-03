@@ -519,7 +519,9 @@ int main(int argc, char *argv[])
                 if (!strncmp(buf, ":HOG", 4)) {
 extern void calchog(char *outb, int mstime);
                     getms();
-		    char *c = strchr( buf, 'J' );
+		    char *c = strchr( buf, ':' );
+		    *c = strchr( c, ':' );
+		    *c = strchr( c, 'J' );
                     calchog(c, thisms);
                     kmlanno(buf);
                     continue;
