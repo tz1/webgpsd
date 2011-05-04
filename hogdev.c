@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
     unsigned char iobuf[24];
     gettimeofday(&tv, NULL);
-    sprintf( xbuf, ":ANODJDATA:%03ld:(stdin)\n", tv.tv_usec / 100 );
+    sprintf( xbuf, ":ANODJDATA:%03ld:(stdin)\n", tv.tv_usec / 1000 );
     write(wgsock, xbuf, strlen(xbuf));
 
     for (;;) {
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	if( !strlen((char *)iobuf) )
 	    continue;
 	gettimeofday(&tv, NULL);
-	sprintf( xbuf, ":HOGDJDATA:%03ld:%s\n", tv.tv_usec / 100, iobuf );
+	sprintf( xbuf, ":HOGDJDAT:%03ld:%s\n", tv.tv_usec / 1000, iobuf );
 	write(wgsock, xbuf, strlen(xbuf));
     }
     close(i2cfd);

@@ -75,9 +75,9 @@ void calchog(char *outb, int mstime)
     // AVR
     i = sscanf(inb, "%02x%02x%02x%02x%02x%02x%02x%02x",
                &hex[0], &hex[1], &hex[2], &hex[3], &hex[4], &hex[5], &hex[6], &hex[7]);
-    
-    if (i < 5 || 0xc4 != crc(hex, i)) {
-        sprintf(outb, "$PDERR,%d,", i);
+    j = crc(hex, i);
+    if (i < 5 || 0xc4 != j) {
+        sprintf(outb, "$PDERR,%d,%02x,", i, j);
         strcat(outb, inb); 
         return;
     }

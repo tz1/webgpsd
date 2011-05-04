@@ -59,9 +59,9 @@ int main(int argc, char *argv[] ) {
     }
     gettimeofday(&tv, NULL);
     if( argc > 1 )
-	sprintf( xbuf, ":ANOD%s:%03ld:%s\n", nodeid, tv.tv_usec / 100, argv[1] );
+	sprintf( xbuf, ":ANOD%s:%03ld:%s\n", nodeid, tv.tv_usec / 1000, argv[1] );
     else
-	sprintf( xbuf, ":ANOD%s:%03ld:(stdin)\n", nodeid, tv.tv_usec / 100 );
+	sprintf( xbuf, ":ANOD%s:%03ld:(stdin)\n", nodeid, tv.tv_usec / 1000 );
     write(wgsock, xbuf, strlen(xbuf));
     for(;;) {
 	i = read(serfd, buf, sizeof(buf)-1);
@@ -71,7 +71,7 @@ int main(int argc, char *argv[] ) {
 	while( i && buf[i] <= ' ' )
 	    buf[i--]=0;
 	gettimeofday(&tv, NULL);
-	sprintf( xbuf, ":GPSD%s:%03ld:%s\n", nodeid, tv.tv_usec / 100, buf );
+	sprintf( xbuf, ":GPSD%s:%03ld:%s\n", nodeid, tv.tv_usec / 1000, buf );
 	write(wgsock, xbuf, strlen(xbuf));
 	//	printf("%s",xbuf);
     }
