@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 	read(i2cfd, iobuf, 20);
 	int i; 
 	for (i = 0; i < 20; i++)
-	    if (iobuf[i] >= 127)
+	    if (iobuf[i] >= 127 || iobuf[i] < ' ')
 		break; 
 	iobuf[i] = 0;
 	if( !strlen((char *)iobuf) )
