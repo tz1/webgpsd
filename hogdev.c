@@ -14,13 +14,19 @@
 int main(int argc, char **argv)
 {
     int wgsock, i2cfd;
-    int port = 2947;
-    struct sockaddr_in sin;
     int i;
-    unsigned int ll;
     struct timeval tv;
     char xbuf[256];
 
+
+    if ((i2cfd = open("/dev/i2c-0", O_RDWR)) < 0)
+        return 1;
+    if (ioctl(i2cfd, I2C_SLAVE, 0x54) < 0)
+        return 2;
+
+    int port = 2947;
+    struct sockaddr_in sin;
+    unsigned int ll;
     memset((char *) &sin, 0, sizeof(sin));
     ll = inet_addr("127.0.0.1");
     memcpy(&sin.sin_addr, &ll, sizeof(ll));
@@ -31,29 +37,31 @@ int main(int argc, char **argv)
     if( i )
 	exit(i);
 
-    if ((i2cfd = open("/dev/i2c-0", O_RDWR)) < 0)
-        return 1;
-    if (ioctl(i2cfd, I2C_SLAVE, 0x54) < 0)
-        return 2;
-
-    unsigned char iobuf[24];
+    const unsigned char iosiz=24;
+    unsigned char i2cbuf[iosiz], outbuf[iosiz*2];
     gettimeofday(&tv, NULL);
     sprintf( xbuf, ":ANODJDATA:%03ld:(stdin)\n", tv.tv_usec / 1000 );
     write(wgsock, xbuf, strlen(xbuf));
-
+    outbuf[0] = 0;
     for (;;) {
-        memset(iobuf, 0, sizeof(iobuf));
-	read(i2cfd, iobuf, 20);
+        memset(i2cbuf, 0, iosiz);
+	read(i2cfd, i2cbuf, iosiz-2);
 	int i; 
-	for (i = 0; i < 20; i++)
-	    if (iobuf[i] >= 127 || iobuf[i] < ' ')
-		break; 
-	iobuf[i] = 0;
-	if( !strlen((char *)iobuf) )
-	    continue;
-	gettimeofday(&tv, NULL);
-	sprintf( xbuf, ":HOGDJDAT:%03ld:%s\n", tv.tv_usec / 1000, iobuf );
-	write(wgsock, xbuf, strlen(xbuf));
+	for (i = 0; i < iosiz-2; i++)
+	    if (i2cbuf[i] >= 127)
+		break;
+	i2cbuf[i] = 0;
+	strcat(outbuf, i2cbuf);
+	char *c = strchr( outbuf, '\n' );
+	if(c) {
+	    *c++ = 0;
+	    if( strlen(outbuf) ) {
+		gettimeofday(&tv, NULL);
+		sprintf( xbuf, ":HOGDJDAT:%03ld:%s\n", tv.tv_usec / 1000, outbuf );
+		write(wgsock, xbuf, strlen(xbuf));
+	    }
+	    memmove( outbuf, c, iosiz*2 - strlen(outbuf) );
+	}
     }
     close(i2cfd);
     close(wgsock);

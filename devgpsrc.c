@@ -21,6 +21,24 @@ int main(int argc, char *argv[] ) {
     unsigned char buf[256];
     char nodeid[5];
 
+    if( argc > 1 ) {
+	strcpy( nodeid, &argv[1][strlen(argv[1])-4]);
+	serfd = open( argv[1], O_RDWR );
+	if( serfd < 0 )
+	    exit(serfd);
+
+	struct termios termst;
+	if (-1 == tcgetattr(serfd, &termst))
+	    return -1;
+	cfmakeraw(&termst);
+	termst.c_iflag |= IGNCR;
+	termst.c_lflag |= ICANON;
+	tcsetattr(serfd, TCSANOW, &termst);
+	tcflush(serfd, TCIOFLUSH);
+    }
+    else {
+	sprintf( nodeid, "%04d", getpid() );
+    }
     memset((char *) &sin, 0, sizeof(sin));
     ll = inet_addr("127.0.0.1");
     memcpy(&sin.sin_addr, &ll, sizeof(ll));
@@ -31,32 +49,6 @@ int main(int argc, char *argv[] ) {
     if( i )
 	exit(i);
 
-    if( argc > 1 ) {
-	strcpy( nodeid, &argv[1][strlen(argv[1])-4]);
-	serfd = open( argv[1], O_RDWR );
-	if( serfd < 0 )
-	    exit(serfd);
-
-{
-    struct termios termst;
-    if (-1 == tcgetattr(serfd, &termst))
-        return -1;
-
-    cfmakeraw(&termst);
-
-    termst.c_iflag |= IGNCR;
-    termst.c_lflag |= ICANON;
-
-    tcsetattr(serfd, TCSANOW, &termst);
-    tcflush(serfd, TCIOFLUSH);
-}
-
-
-
-    }
-    else {
-	sprintf( nodeid, "%04d", getpid() );
-    }
     gettimeofday(&tv, NULL);
     if( argc > 1 )
 	sprintf( xbuf, ":ANOD%s:%03ld:%s\n", nodeid, tv.tv_usec / 1000, argv[1] );

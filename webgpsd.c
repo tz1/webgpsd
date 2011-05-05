@@ -256,6 +256,9 @@ static void primelocaltime()
 
     gettimeofday(&tv, NULL);
     tmpt = gmtime(&tv.tv_sec);
+    if( tmpt->tm_year % 100 > 69 )
+	exit(8);
+
     gpst[bestgps].scth = 1;
     gpst[bestgps].sc = tmpt->tm_sec;
     gpst[bestgps].mn = tmpt->tm_min;
@@ -354,7 +357,7 @@ int main(int argc, char *argv[])
     int lstn = -1, lmax = 0;
     fd_set fds, fds2, fdserr, lfds;
     struct sockaddr_in sin;
-    char buf[512];
+    char buf[4096];
     //    struct timeval tv;
     unsigned int mainlock = 0;
     unsigned char rover = 1; // no root run;
@@ -418,14 +421,7 @@ int main(int argc, char *argv[])
 
     dobindlstn(&lstn, gpsdport);
 
-    primelocaltime();
-
     xbuf = malloc(BUFLEN);
-
-    //place for OBD data before time and GPS gpst[bestgps].lock for position
-    if (kmlinterval)
-        logfd = fopen("prlock.kml", "a+b");
-    add2kml("<Document><name>Pre-Lock</name><Placemark><LineString><coordinates>0,0,0\n");
 
     signal(SIGTERM, teardown);
     signal(SIGINT, teardown);
@@ -441,7 +437,7 @@ int main(int argc, char *argv[])
     FD_SET(lstn, &lfds);
 
     fprintf(errfd, "listen g=%d\n", lstn);
-
+    unsigned char firsttime = 1;
     for (;;) {                  // main server loop
         fds = lfds;
         n = lmax;
@@ -469,7 +465,7 @@ int main(int argc, char *argv[])
                 continue;
             }
             if (FD_ISSET(acpt[i], &fds)) {
-                n = read(acpt[i], buf, 511);
+                n = read(acpt[i], buf, 4095);
                 if (n <= 0) {
                     if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
                         continue;
@@ -490,9 +486,31 @@ int main(int argc, char *argv[])
                     acpt[i] = -1;
                     continue;
                 }
-                if (!strncmp(buf, ":GPS", 4)) {
-                    kmlanno(buf);
-                    char *b = &buf[1];
+
+
+		if( buf[0] == ':' ) {
+
+	if( firsttime ) {
+	    //	    fprintf( stderr, "start %d\n", kmlinterval );
+	    firsttime = 0;
+	    //place for OBD data before time and GPS gpst[bestgps].lock for position
+	    primelocaltime();
+	    if (kmlinterval)
+		logfd = fopen("prlock.kml", "a+b");
+	    add2kml("<Document><name>Pre-Lock</name><Placemark><LineString><coordinates>0,0,0\n");
+	}
+
+		char *mrk = buf - 1;
+		for(;;) {
+		    char *bp = mrk + 1;
+		    mrk = strchr( bp, '\n' );
+		    if( !mrk )
+			break;
+		    *mrk = 0; // isolate each line
+
+                if (!strncmp(bp, ":GPS", 4)) {
+                    kmlanno(bp);
+                    char *b = &bp[1];
                     b = strchr(b, ':'); // find second colon
                     if (b) {
                         b++;
@@ -505,28 +523,34 @@ int main(int argc, char *argv[])
                     doraw(b);
                     if (mainlock)
                         mainlock--;
-                    i = getgpsinfo(acpt[i], buf, thisms);
+                    i = getgpsinfo(acpt[i], bp, thisms);
                     // fresh, good data plus lock, reset aux counter
                     if (gpst[bestgps].gpsfd == acpt[i] && i > 0 && gpst[bestgps].lock)  ///////////////////////////////////////////////////
                         mainlock = 100;
                     continue;
                 }
-                if (!strncmp(buf, ":ANO", 4)) {
-                    kmlanno(buf);
+                if (!strncmp(bp, ":ANO", 4)) {
+                    kmlanno(bp);
                     continue;
                 }
 #ifdef HARLEY
-                if (!strncmp(buf, ":HOG", 4)) {
-extern void calchog(char *outb, int mstime);
-                    getms();
-		    char *c = strchr( buf+4, ':' );
-		    c = strchr( c+1, ':' );
+                if (!strncmp(bp, ":HOGDJDAT:", 10)) {
+extern void calchog(char *, int);
+		    char *c = strchr( bp+11, ':' );
+		    if( !c )
+			continue;
 		    c = strchr( c+1, 'J' );
+		    if( !c )
+			continue;
+                    getms();
                     calchog(c, thisms);
-                    kmlanno(buf);
+                    kmlanno(bp);
                     continue;
                 }
 #endif
+		} // line loop
+		continue;
+		} // end if start with colon
                 // finally, do command
                 prtgpsinfo(i, buf);
             }

@@ -55,7 +55,7 @@ void calchog(char *outb, int mstime)
     int i, j, x;
     unsigned short y;
     int hex[8];
-    char inb[512], *c, *d;
+    char inb[4096], *c, *d;
 
     c = outb;
     while( *c && (*c < '0' || *c > 'F') ) // remove leading J or whatever
