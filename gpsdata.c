@@ -147,10 +147,12 @@ void add2kml(char *add)
 
 // Save and zip current KML
 extern int kmlzipper(char *kmlfn);
+extern char *cmdname;
 static void kmzip(char *fname)
 {
     fprintf(errfd, "Zipping %s\n", fname);
     if (!fork()) {
+	cmdname = "webgpsd-kmltokmz"; 
         int k, n = getdtablesize();
         for (k = 3; k < n; k++)
             close(k);

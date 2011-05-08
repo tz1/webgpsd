@@ -117,6 +117,7 @@ int kmlzipper( char *kmlfn )
     pipe(pipeto);
     pipe(pipefrom);
     pid = fork();
+    extern char *cmdname;
     if (!pid) {
 	dup2(pipeto[0], STDIN_FILENO);
 	dup2(pipefrom[1], STDOUT_FILENO);
@@ -131,6 +132,7 @@ int kmlzipper( char *kmlfn )
     close(pipeto[0]);
     close(pipefrom[1]);
     if (!fork()) {
+	cmdname = "webgpsd-kmlsend";
 	close(pipefrom[0]);
 	for (;;) {		// send infile to pipe, then exit
 	    olen = read(ifd, obuf, BUFMAX);

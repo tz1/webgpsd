@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	exit(i);
 
     const unsigned char iosiz=24;
-    unsigned char i2cbuf[iosiz], outbuf[iosiz*2];
+    char i2cbuf[iosiz], outbuf[iosiz*2];
     gettimeofday(&tv, NULL);
     sprintf( xbuf, ":ANODJDATA:%03ld:(stdin)\n", tv.tv_usec / 1000 );
     write(wgsock, xbuf, strlen(xbuf));
@@ -52,15 +52,19 @@ int main(int argc, char **argv)
 		break;
 	i2cbuf[i] = 0;
 	strcat(outbuf, i2cbuf);
-	char *c = strchr( outbuf, '\n' );
-	if(c) {
-	    *c++ = 0;
+	char *c;
+	while( (c = strchr( outbuf, '\n' ))) {
+	    while( *c == '\n' )
+		*c++ = 0;
 	    if( strlen(outbuf) ) {
 		gettimeofday(&tv, NULL);
 		sprintf( xbuf, ":HOGDJDAT:%03ld:%s\n", tv.tv_usec / 1000, outbuf );
 		write(wgsock, xbuf, strlen(xbuf));
 	    }
-	    memmove( outbuf, c, iosiz*2 - strlen(outbuf) );
+	    if( !*c )
+		outbuf[0] = 0;
+	    else
+		strcpy( outbuf, c);
 	}
     }
     close(i2cfd);

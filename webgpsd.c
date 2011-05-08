@@ -351,6 +351,7 @@ void usage(char *errstr) {
 }
 
 //static int lasmn = -1;
+char *cmdname;
 int main(int argc, char *argv[])
 {
     int n, i;
@@ -361,6 +362,7 @@ int main(int argc, char *argv[])
     //    struct timeval tv;
     unsigned int mainlock = 0;
     unsigned char rover = 1; // no root run;
+    cmdname = argv[0];
     for( n = 1; n < argc; n++ ) {
 	if( argv[n][0] != '-' )
 	    usage("invalid parameter format");
