@@ -188,10 +188,14 @@ static void dowatch()
     }
 }
 
+char ibuf[4096];
 static void teardown(int signo)
 {
     fprintf(errfd, "Shutdown\n");
     signal(SIGCHLD, SIG_IGN);
+    if( signo == SIGSEGV ) {
+	fprintf( errfd, "ibuf: %s\n", ibuf );
+    }
     fflush(errfd);
     gpst[bestgps].mn++;
     rotatekml();
@@ -358,7 +362,6 @@ int main(int argc, char *argv[])
     int lstn = -1, lmax = 0;
     fd_set fds, fds2, fdserr, lfds;
     struct sockaddr_in sin;
-    char buf[4096];
     //    struct timeval tv;
     unsigned int mainlock = 0;
     unsigned char rover = 1; // no root run;
@@ -428,6 +431,7 @@ int main(int argc, char *argv[])
     signal(SIGTERM, teardown);
     signal(SIGINT, teardown);
     signal(SIGQUIT, teardown);
+    signal(SIGSEGV, teardown);
     signal(SIGPIPE, SIG_IGN);
     signal(SIGHUP, SIG_IGN);
     signal(SIGCHLD, reapkid);
@@ -467,7 +471,7 @@ int main(int argc, char *argv[])
                 continue;
             }
             if (FD_ISSET(acpt[i], &fds)) {
-                n = read(acpt[i], buf, 4095);
+                n = read(acpt[i], ibuf, 4095);
                 if (n <= 0) {
                     if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
                         continue;
@@ -476,10 +480,10 @@ int main(int argc, char *argv[])
                     acpt[i] = -1;
                     continue;
                 }
-                buf[n] = 0;
-                if (strstr(buf, "HTTP/1")) {    // http request
-                    if (!strncmp(buf, "GET ", 4)) {     // only one allowed
-                        strncpy(xbuf, buf, 128);
+                ibuf[n] = 0;
+                if (strstr(ibuf, "HTTP/1")) {    // http request
+                    if (!strncmp(ibuf, "GET ", 4)) {     // only one allowed
+                        strncpy(xbuf, ibuf, 128);
                         xbuf[128] = 0;  // force null term string
                         dowebget();
                         write(acpt[i], xbuf, strlen(xbuf));
@@ -490,7 +494,7 @@ int main(int argc, char *argv[])
                 }
 
 
-		if( buf[0] == ':' ) {
+		if( ibuf[0] == ':' ) {
 
 	if( firsttime ) {
 	    //	    fprintf( stderr, "start %d\n", kmlinterval );
@@ -502,7 +506,7 @@ int main(int argc, char *argv[])
 	    add2kml("<Document><name>Pre-Lock</name><Placemark><LineString><coordinates>0,0,0\n");
 	}
 
-		char *mrk = buf - 1;
+		char *mrk = ibuf - 1;
 		for(;;) {
 		    char *bp = mrk + 1;
 		    mrk = strchr( bp, '\n' );
@@ -554,7 +558,7 @@ extern void calchog(char *, int);
 		continue;
 		} // end if start with colon
                 // finally, do command
-                prtgpsinfo(i, buf);
+                prtgpsinfo(i, ibuf);
             }
         }
         if ((100000 + thisms - watchms) % 100000 > 1000) {

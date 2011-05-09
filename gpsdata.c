@@ -207,9 +207,9 @@ static void writelock()
     char cmd[256];
     int i;
     // set system lock - linux generic
-    // sprintf( cmd, "sudo date -u -s %02d/%02d/20%02d", gpst[cidx].mo,gpst[cidx].dy,gpst[cidx].yr );
-    // sprintf( cmd, "sudo date -u -s %02d:%02d:%02d", gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
-    // sprintf( cmd, "sudo hwlock --systohc" );
+    sprintf( cmd, "sudo date -u -s %02d/%02d/20%02d", gpst[cidx].mo,gpst[cidx].dy,gpst[cidx].yr );
+    sprintf( cmd, "sudo date -u -s %02d:%02d:%02d", gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
+    sprintf( cmd, "sudo hwlock --systohc" );
 
 #ifdef NOKIAN810
     // nokia

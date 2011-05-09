@@ -145,15 +145,17 @@ function update() {
     if( hog.gear == -1 )
 	hog.gear = 0;
     if( hog.neutral ) {
-	canv.fillStyle = '#0f0'
+	if( hog.clutch )
+	    canv.fillStyle = '#0f0'
+	else
+	    canv.fillStyle = '#ff0'
 	canv.fillText("N", r/5,r+v/2)
     }
-    else if( hog.clut ) {
-	canv.fillStyle = '#f80'
-	canv.fillText(hog.gear, r/5,r+v/2)
-    }
     else {
-	canv.fillStyle = '#fff'
+	if( hog.clutch )
+	    canv.fillStyle = '#f80'
+	else
+	    canv.fillStyle = '#fff'
 	canv.fillText(hog.gear, r/5,r+v/2)
     }
 

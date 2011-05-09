@@ -1,6 +1,5 @@
 #!/bin/sh
 base=`echo $1 | sed -e "s/[.].*//g"`
-echo static char $base[] = >$1
+echo static char $base[32768] = >$1
 sed -e 's/"/\\"/g' -e 's/.*/"&\\n"/' <$1tml >>$1
 echo \; >>$1
-
