@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     if( i )
 	exit(i);
 
-    const unsigned char iosiz=24;
+    const unsigned char iosiz=20;
     char i2cbuf[iosiz], outbuf[iosiz*2];
     gettimeofday(&tv, NULL);
     sprintf( xbuf, ":ANODJDATA:%03ld:(stdin)\n", tv.tv_usec / 1000 );
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	while( (c = strchr( outbuf, '\n' ))) {
 	    while( *c == '\n' )
 		*c++ = 0;
-	    if( strlen(outbuf) ) {
+	    if( strlen(outbuf) > 7  && strchr( outbuf, 'J') ) {
 		gettimeofday(&tv, NULL);
 		sprintf( xbuf, ":HOGDJDAT:%03ld:%s\n", tv.tv_usec / 1000, outbuf );
 		write(wgsock, xbuf, strlen(xbuf));

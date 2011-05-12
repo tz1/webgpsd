@@ -152,7 +152,7 @@ static void kmzip(char *fname)
 {
     fprintf(errfd, "Zipping %s\n", fname);
     if (!fork()) {
-	cmdname = "webgpsd-kmltokmz"; 
+	cmdname = "wgl2z"; 
         int k, n = getdtablesize();
         for (k = 3; k < n; k++)
             close(k);

@@ -62,7 +62,7 @@ void calchog(char *outb, int mstime)
         c++;
     d = inb;
     while( *c ) {
-	if( (*c >= '0' || *c <= 'F') )
+	if( (*c >= '0' && *c <= 'F') )
 	       *d++ = *c;
 	c++;
     }

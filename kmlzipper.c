@@ -132,7 +132,7 @@ int kmlzipper( char *kmlfn )
     close(pipeto[0]);
     close(pipefrom[1]);
     if (!fork()) {
-	cmdname = "webgpsd-kmlsend";
+	cmdname = "wgksnd";
 	close(pipefrom[0]);
 	for (;;) {		// send infile to pipe, then exit
 	    olen = read(ifd, obuf, BUFMAX);
