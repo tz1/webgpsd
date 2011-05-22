@@ -211,6 +211,13 @@ static void writelock()
     sprintf( cmd, "sudo date -u -s %02d:%02d:%02d", gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
     sprintf( cmd, "sudo hwlock --systohc" );
 
+    //chumby - need two, first for year, then for seconds.
+    sprintf( cmd, "date -u -s 20%02d%02d%02d%02d%02d", gpst[cidx].yr,gpst[cidx].mo,gpst[cidx].dy,
+	     gpst[cidx].hr,gpst[cidx].mn);
+    sprintf( cmd, "date -u -s %02d%02d%02d%02d.%02d", gpst[cidx].mo,gpst[cidx].dy,
+	     gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
+    sprintf( cmd, "hwlock -wu" );
+
 #ifdef NOKIAN810
     // nokia
     if (!access("/mnt/initfs/usr/bin/retutime", F_OK)) {

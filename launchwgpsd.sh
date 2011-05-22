@@ -1,11 +1,13 @@
 #!/bin/sh
+echo launching webgpsd and helpers
 killall webgpsd
-rm /mnt/storage/wg.pid
+rm /var/run/webgpsd.pid
 (while true;do
-	if [ `cat /sys/class/power_supply/ac/online` -eq "1" ] ; then 
-		webgpsd -r -l /mnt/storage/ -k /mnt/storage/wg.pid
-	fi
-	sleep 5
+        if [ ! -e /var/run/webgpsd.pid -a `cat /sys/class/power_supply/ac/online` -eq "1" ] ; then 
+                webgpsd -r -l /mnt/storage/ -k /var/run/webgpsd.pid
+                rm /var/run/webgpsd.pid
+        fi
+        sleep 5
 done) &
 sleep 1 #let webgpsd startup
 
@@ -16,14 +18,14 @@ mDNSPublish `hostname` _gpsd._tcp 2947 &
 
 ( while true; do
 if [ `cat /sys/class/power_supply/ac/online` -eq "0" ] ; then 
-	if [ `cat /sys/class/power_supply/battery/capacity` -lt "55" ]; then
-		killall webgpsd
-		sleep 5
-`	fi
-	if [ `cat /sys/class/power_supply/battery/capacity` -lt "40" ]; then
-		poweroff
-	fi
+        if [ `cat /sys/class/power_supply/battery/capacity` -lt "55" ]; then
+                killall webgpsd
+                sleep 5
+        fi
+        if [ `cat /sys/class/power_supply/battery/capacity` -lt "40" ]; then
+                poweroff
+        fi
 fi
 sleep 5
 done ) &
-
+echo webgpsd started

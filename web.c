@@ -1,11 +1,8 @@
 #include "webgpsd.h"
 
-// web pages from HTML templat'es
-#include "dogmap.h"
-#include "satstat.h"
-#include "radfmt.h"
+char *dogmap,*satstat,*radfmt;
 #ifdef HARLEY
-#include "hogstat.h"
+char *hogstat;
 #endif
 
 // kml network link feed for google earth
@@ -29,8 +26,7 @@ void dokml(char *c)
 {
     char *d;
     int range = 1500, tilt = 45;
-    d = strstr(c, "kml");
-    d--;
+    d = strstr(c, ".kml ");
     d--;
     while (*d && (*d >= '0' && *d <= '9'))
         d--;
@@ -38,7 +34,6 @@ void dokml(char *c)
     d--;
     while (*d && (*d >= '0' && *d <= '9'))
         d--;
-
     tilt = atoi(&d[1]);
 
     sprintf(xbuf, gpskml, rtname, gpst[bestgps].gspd / 1000, gpst[bestgps].gspd % 1000,
@@ -231,7 +226,8 @@ static char gpspage1[] =        // menu
   "\n<table border=1>"
   "<tr><td><a href=/dogmap.html><h1><br>MAP<br><br></a>"
   "<tr><td><a href=/hogstat.html><h1><br>HOG<br><br></a>"
-  "<tr><td><a href=/sats.html><h1><br>SatStat<br><br></a>" "<tr><td><a href=/radar20.html><h1><br>RADAR<br><br></a>" "</table>\n";
+  "<tr><td><a href=/satstat.html><h1><br>SatStat<br><br></a>"
+  "<tr><td><a href=/radar20.html><h1><br>RADAR<br><br></a>" "</table>\n";
 
 static char gpspage2[] =        // source status
   "<td>\n<table border=%d><tr><td>"
@@ -298,24 +294,26 @@ static void dosats()
 void dowebget()
 {
     char *c;
-    if (strstr(xbuf, "kml"))
+    if (strstr(xbuf, "gpsdata") && strstr(xbuf, ".kml "))
         dokml(xbuf);
 #if 0
     else if (strstr(xbuf, "ngjson"))
         dongjson();
 #endif
 #ifdef HARLEY
-    else if (strstr(xbuf, "hogstat"))
-        dohogstat();
-    else if (strstr(xbuf, "hog"))
+    else if (strstr(xbuf, "hogstat.json"))
         dohog();
+    else if (strstr(xbuf, "hogstat.html"))
+        dohogstat();
 #endif
-    else if (strstr(xbuf, "json"))
+    else if (strstr(xbuf, "gpsstat.json"))
         dojson();
     else if (strstr(xbuf, "gpsdata.xml"))
         doxml();
     else if (strstr(xbuf, "dogmap.html"))
         dogmapx();
+    else if (strstr(xbuf, "satstat.html"))
+        dosats();
     else if ((c = strstr(xbuf, "radar"))) {
         c += 5;
         int i = atoi(c);
@@ -323,9 +321,6 @@ void dowebget()
             i = 20;             // miles = about 17 px per mile
         int w = 340, h = 340;
         dorad(i, w, h);
-    }
-    else if ((c = strstr(xbuf, "sats"))) {
-        dosats();
     }
     else
         doweb();

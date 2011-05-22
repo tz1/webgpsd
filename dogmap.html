@@ -48,7 +48,7 @@ function nosb() {
 var stale = 999999999
 
 function moveto() {
-    xh.open( "GET", "x.json ", false)
+    xh.open( "GET", "gpsstat.json ", false)
     xh.send()
     gps = eval('(' + xh.responseText + ')', null)
     var mrkopt = {visible:false}

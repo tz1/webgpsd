@@ -13,10 +13,11 @@ all: webgpsd devgpsrc kmzmerge kml2kmz
 webgpsd: $(OBJS)
 	$(CC) -o $@ $^ $(LIBS)
 
-web.o: web.c satstat.h dogmap.h radfmt.h hogstat.h
+#HEADHTML = dogmap.h satstat.h radfmt.h hogstat.h 
+#web.o: web.c $(HEADHTML)
 
-%.h : %.html
-	./html2head $@
+#%.h : %.html
+#	./html2head $@
 
 clean:
-	rm -f webgpsd $(OBJS) kml2kmz dogmap.h satstat.h radfmt.h hogstat.h *~ hogdev j1850 devgpsrc kmzmerge
+	rm -f webgpsd $(OBJS) kml2kmz $(HEADHTML) *~ hogdev j1850 devgpsrc kmzmerge

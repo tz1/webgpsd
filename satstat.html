@@ -9,8 +9,31 @@
 var canv,rq,xh,wd,ht
 var pi2 = Math.PI*2
 var r2d = pi2/360
-var mx = 240;
+var mx = 240
+
+var ua = navigator.userAgent.toLowerCase()
+
+var white = "#fff"
+var gray = '#666'
+var black = "#000"
+var red = '#f00'
+var yellow = '#880'
+var green = '#0f0'
+var cyan = '#0ff'
+var magent='#f0f'
+
 function dodraw() {
+    if( ua.search("kindle") > -1 ) {
+	black = "#fff"
+	gray = "#aaa"
+	white = "#888"
+	red = '#888'
+	yellow = '#444'
+	green = '#000'
+	cyan = '#00f'
+	magent='#666'
+    }
+
     var elem = document.getElementById('myCanvas')
     canv = elem.getContext('2d')
     wd = window.innerWidth
@@ -20,7 +43,7 @@ function dodraw() {
     mx = ht;
     if( wd < mx )
       mx = wd;
-    canv.fillStyle = '#000'
+    canv.fillStyle = black
     canv.fillRect(0,0, wd,ht)
     xh=new XMLHttpRequest()
     setInterval(update, 1000)
@@ -38,10 +61,10 @@ function update() {
         canv.canvas.height = ht
     }
 
-    xh.open("GET","x.json", false)
+    xh.open("GET","gpsstat.json", false)
     xh.send()
     gps = eval('('+xh.responseText+')', null)
-    canv.fillStyle = '#000'
+    canv.fillStyle = black
     canv.fillRect(0, 0, wd,ht)
     canv.textAlign="center"
     canv.textBaseline="middle"
@@ -52,18 +75,18 @@ function update() {
     canv.font = r/10 +"px sans-serif"
 
     if( gps.mode < 1.5 )
-      canv.strokeStyle = '#666'
+      canv.strokeStyle = gray
     else if( gps.mode > 2.5 )
-      canv.strokeStyle = '#0c0'
+      canv.strokeStyle = green
     else
-      canv.strokeStyle = '#880'
+      canv.strokeStyle = yellow
 
     canv.beginPath()
     canv.moveTo(19*r/10,r)
     canv.arc(r,r,9*r/10,0,pi2,true)
     canv.stroke()
 
-    canv.strokeStyle = '#666'
+    canv.strokeStyle = gray
     canv.beginPath()
     canv.moveTo(8*r/5,r)
     canv.arc(r,r,3*r/5,0,pi2,true)
@@ -83,19 +106,21 @@ function update() {
     canv.lineTo(r-45*r/100,r+77*r/100)
     canv.stroke()
 
-    canv.fillStyle = '#f00'
+    canv.fillStyle = red
     for( i = 0 ; i < gps.ns; i++ ) {
         az = r2d * gps.az[i]
         el = r * (90 - gps.el[i]) / 100
         x = r+el*Math.sin(az)
         y = r-el*Math.cos(az)
         s = gps.sn[i] * r/300;
-        canv.strokeStyle = '#fff'
+        canv.strokeStyle = white
+	//canv.globalCompositeOperation = 'xor'
         canv.strokeRect(x-s,y-s,s*2,s*2)
+	//canv.globalCompositeOperation = 'source-over'
         if( gps.u[i] )
-            canv.fillStyle = '#0f0'
+            canv.fillStyle = green
         else
-            canv.fillStyle = '#f00'
+            canv.fillStyle = red
         canv.fillText(gps.n[i], x,y)
     }
 
@@ -109,13 +134,13 @@ function update() {
         y2 = r-el*Math.cos(az)
 
         // speed in cyan
-        canv.strokeStyle = '#0ff'
+        canv.strokeStyle = cyan
         canv.beginPath()
         canv.moveTo(r,r)
         canv.lineTo(x2,y2)
         canv.stroke()
         // direction to edge in red
-        canv.strokeStyle = '#f00'
+        canv.strokeStyle = red
         canv.beginPath()
         canv.moveTo(x2,y2)
         canv.lineTo(x,y)
@@ -124,7 +149,7 @@ function update() {
 
     rd = gps.pdop * 10
     if( rd <= 90 ) {
-        canv.strokeStyle = '#f0f'
+        canv.strokeStyle = magent
         //canv.strokeRect(100-rd,100-rd,rd+rd,rd+rd)
         rd = rd * r / 100;
         canv.beginPath()

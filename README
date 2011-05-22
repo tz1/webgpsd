@@ -1,8 +1,32 @@
 WebGPSD is an update to minigpsd.  It still logs to KML files, but now takes multiple NMEA sources (via the python scripts and picks the best one), multiple annotation sources (like for my motorcycle data) all using one or two listen sockets, e.g. http://localhost:2947 or http://192.168.0.99:8888.  Satellite status as web page using json updates.
 
-Version 0.1pre.  Released under GPLv3.
+Version 0.7  Released under GPLv3.
+
+
+URLs:
+
+all are http://(localhost):2947(or port)/...
+
+Anything else will return the main status and menu page
+
+Most of the templates are in /etc/webgpsd/ after install
+
+gpsdata[[-<tilt>]-<range>].kml - network link for google earth
+    gpsdata.kml has range 1500, tilt 45, gpsdata-30-1000.kml has tilt
+    of 30, range of 1000.
+dogmap.html will bring up a moving google map display.
+gpsstat.json will return a json string with the gps and location status (webgpsd format)
+gpsdata.xml will return a KMLv2 xml string for google maps
+radar{range}.html will return a page with a live animated update radar map.
+    radar.html defaults to 20 miles, radar50.html will return a 50 mile map
+
+For Harely:
+hogstat.html brings up the instrument cluster.
+hogstat.json returns the bike status
 
 WebGPSD - current programs
+
+(ADD CHUMBY!)
 
 gps source scripts
     btgpsrc.py  <bluetoothaddr> [pin] # pin defaults to zero
@@ -28,5 +52,5 @@ compress generated kml to kmz using gzip (put binary in /usr/bin):
     kml2kmz.c
 
 Harley j1850 decode:
-    harley.c (not used yet)
+    harley.c
 

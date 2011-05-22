@@ -1,6 +1,7 @@
 // CONFIG
 static char *pidlockfile = "/tmp/webgpsd.pid";
 static char *logdirprefix = "/tmp/";
+static char *webdirprefix = "/etc/webgpsd/";
 int kmlinterval = 5;
 static int gpsdport = 2947;
 
@@ -348,6 +349,7 @@ void usage(char *errstr) {
 	    "-k path-to-pid-lockfile\n"
 	    "-l path-to-log-directory\n"
 	    "-i MINUTES (5) for kml split interval\n"
+	    "-w path to web directory\n"
 	    "-p PORT (2947)\n"
 	    "-r (allow run as root)\n"
 	    "-h print this and exit\n", errstr);
@@ -375,6 +377,9 @@ int main(int argc, char *argv[])
 	    break;
 	case 'l':
 	    logdirprefix = argv[++n];
+	    break;
+	case 'w':
+	    webdirprefix = argv[++n];
 	    break;
 	case 'h':
 	    usage("");
@@ -405,6 +410,63 @@ int main(int argc, char *argv[])
 
     if (pilock())
         exit(-1);
+
+extern char *dogmap,*satstat,*radfmt;
+
+    strcpy( ibuf, webdirprefix );
+    strcat( ibuf, "/" );
+    strcat( ibuf, "dogmap.html" );
+    n = open( ibuf, O_RDONLY );
+    if( n < 0 )
+	exit(-3);
+    i = lseek( n, 0, SEEK_END ); 
+    lseek( n, 0, SEEK_SET ); 
+    dogmap = malloc( i + 1 );
+    read( n, dogmap, i );
+    dogmap[i] = 0;
+    close(n);
+
+    strcpy( ibuf, webdirprefix );
+    strcat( ibuf, "/" );
+    strcat( ibuf, "satstat.html" );
+    n = open( ibuf, O_RDONLY );
+    if( n < 0 )
+	exit(-3);
+    i = lseek( n, 0, SEEK_END ); 
+    lseek( n, 0, SEEK_SET ); 
+    satstat = malloc( i + 1 );
+    read( n, satstat, i );
+    satstat[i] = 0;
+    close(n);
+
+    strcpy( ibuf, webdirprefix );
+    strcat( ibuf, "/" );
+    strcat( ibuf, "radfmt.html" );
+    n = open( ibuf, O_RDONLY );
+    if( n < 0 )
+	exit(-3);
+    i = lseek( n, 0, SEEK_END ); 
+    lseek( n, 0, SEEK_SET ); 
+    radfmt = malloc( i + 1 );
+    read( n, radfmt, i );
+    radfmt[i] = 0;
+    close(n);
+
+#ifdef HARLEY
+extern char *hogstat;
+    strcpy( ibuf, webdirprefix );
+    strcat( ibuf, "/" );
+    strcat( ibuf, "hogstat.html" );
+    n = open( ibuf, O_RDONLY );
+    if( n < 0 )
+	exit(-3);
+    i = lseek( n, 0, SEEK_END ); 
+    lseek( n, 0, SEEK_SET ); 
+    hogstat = malloc( i + 1 );
+    read( n, hogstat, i );
+    hogstat[i] = 0;
+    close(n);
+#endif
 
     memset(&gpst, 0, sizeof(gpst));
 
@@ -483,8 +545,11 @@ int main(int argc, char *argv[])
                 ibuf[n] = 0;
                 if (strstr(ibuf, "HTTP/1")) {    // http request
                     if (!strncmp(ibuf, "GET ", 4)) {     // only one allowed
-                        strncpy(xbuf, ibuf, 128);
-                        xbuf[128] = 0;  // force null term string
+                        strncpy(xbuf, ibuf, 512);
+			char *c = strchr(xbuf,'\n');
+			if( *c )
+			    *c = 0;
+                        xbuf[512] = 0;  // force null term string
                         dowebget();
                         write(acpt[i], xbuf, strlen(xbuf));
                     }
@@ -568,4 +633,5 @@ extern void calchog(char *, int);
 
     }
     return 0;                   // quiet compiler
+
 }

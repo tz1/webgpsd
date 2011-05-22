@@ -1,3 +1,14 @@
+DOCUMENT CHUMBY IN README, update for files
+
+Add option to set clocks on chumby.
+
+Harley:
+	add status to main if active
+	j1850 watchdog in hogdev (?)
+
+
+
+
 Config / comline:
 	where to store?
         Listen ports as array, list in cmdline?
@@ -9,13 +20,9 @@ Sources:
         serial port set comm via termios?
 
 Web:
-        per-source status display?
-        return array of sources?
+        json array of sources?
 	(need something like this for gpsd-ng)
 
 GPSD:
         move to json commands (?), sync format with gpsd-ng.
 
-Harley/OBD:
-        reintegrate or split to harleyd
-        revive miniobdd

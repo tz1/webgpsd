@@ -17,7 +17,7 @@
 #include <pthread.h>
 #include <sys/un.h>
 
-#define BUFLEN (16384)
+#define BUFLEN (32768)
 #define MAXCONN (32)
 
 // data billboard
