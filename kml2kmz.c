@@ -83,9 +83,7 @@ int main(int argc, char *argv[])
 
     pklhead[12] = pkchead[14] = bitbuf & 255;
     pklhead[13] = pkchead[15] = bitbuf >> 8;
-
 }
-
 
     nice(15);
 

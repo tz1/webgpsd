@@ -88,7 +88,7 @@ int getgpsinfo(int fd, char *, int);
 void findbestgps(void);
 
 //web subfunctions
-void dowebget(void);
+int dowebget(void);
 
 //misc
 void rotatekml(void);

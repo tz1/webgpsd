@@ -4,7 +4,7 @@ killall webgpsd
 rm /var/run/webgpsd.pid
 (while true;do
         if [ ! -e /var/run/webgpsd.pid -a `cat /sys/class/power_supply/ac/online` -eq "1" ] ; then 
-                webgpsd -r -l /mnt/storage/ -k /var/run/webgpsd.pid
+                webgpsd -r -l /mnt/storage/ -k /var/run/webgpsd.pid -b /psp/gpsd.dat
                 rm /var/run/webgpsd.pid
         fi
         sleep 5

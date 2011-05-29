@@ -7,21 +7,38 @@ URLs:
 
 all are http://(localhost):2947(or port)/...
 
-Anything else will return the main status and menu page
+Anything not found will return the main status and menu page or a 404 code
 
-Most of the templates are in /etc/webgpsd/ after install
+The main status page is built-in and does NOT require javascript.  It uses a meta-refresh.
+
+The templates are in /etc/webgpsd/ after install
+
+It will also serve any page from that directory so you can create your
+    own.  They are limited to 32K.
+
+radfmt.html is the template for the radar map and is loaded and cached
+    when webgpsd starts.  The others will be served from the directory
+    directly.
 
 gpsdata[[-<tilt>]-<range>].kml - network link for google earth
     gpsdata.kml has range 1500, tilt 45, gpsdata-30-1000.kml has tilt
     of 30, range of 1000.
-dogmap.html will bring up a moving google map display.
+dogmap.html will bring up a moving google map display.  This is a static page.
 gpsstat.json will return a json string with the gps and location status (webgpsd format)
 gpsdata.xml will return a KMLv2 xml string for google maps
 radar{range}.html will return a page with a live animated update radar map.
     radar.html defaults to 20 miles, radar50.html will return a 50 mile map
+    This is a template that fills in printf strings.
+satstat.heml will show the satellites, the size of the squares indicates signal,
+    Numbers are of the satellites.  Also direction and speed with a line and HDOP with
+    a circle in the center.  The outermost circle will be green for 3d fix, yellow for
+    2d, gray for none.  This is a static page, but uses javascript and queries to grab 
+    the GPS data.
 
 For Harely:
-hogstat.html brings up the instrument cluster.
+
+hogstat.html brings up the instrument cluster.  This is a static page that uses 
+    javascript to grab the harley data
 hogstat.json returns the bike status
 
 WebGPSD - current programs
@@ -35,21 +52,20 @@ gps source scripts
     devgpsrc.py # stdin
     playback.py <list of kmz or kml files written by webgps>
     pbrawnema.py rawfiles # playback text captures of NMEA
-
-web page templates:
-    dogmap.html
-    satstat.html
-    html2head # convert to header script
+    hogdev - read chumby i2c for ATtiny4313 j1850 converter messages
+    devgpsrc - read chumby device (typically /dev/ttyUSB0) for data
 
 webgpsd build files:
     webgpsd.c
     gpsdata.c
     web.c
     webgpsd.h
-    Makefile
+    Makefile*
 
 compress generated kml to kmz using gzip (put binary in /usr/bin):
-    kml2kmz.c
+    kml2kmz - convert kml file to kmz file
+    kmzmerge - merge converted kmz files in directory N into N.kmz 
+    	     note: google earth 6 only displays the first file
 
 Harley j1850 decode:
     harley.c

@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     const unsigned char iosiz=20;
     char i2cbuf[iosiz], outbuf[iosiz*2];
     gettimeofday(&tv, NULL);
-    sprintf( xbuf, ":ANODJDATA:%03ld:(stdin)\n", tv.tv_usec / 1000 );
+    sprintf( xbuf, ":ANODJDATA:%03ld:(i2c)\n", tv.tv_usec / 1000 );
     write(wgsock, xbuf, strlen(xbuf));
     outbuf[0] = 0;
     for (;;) {

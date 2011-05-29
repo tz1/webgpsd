@@ -1,7 +1,8 @@
 // CONFIG
 static char *pidlockfile = "/tmp/webgpsd.pid";
 static char *logdirprefix = "/tmp/";
-static char *webdirprefix = "/etc/webgpsd/";
+static char *backupstate = "/tmp/webgpsd.dat";
+char *webdirprefix = "/etc/webgpsd/";
 int kmlinterval = 5;
 static int gpsdport = 2947;
 
@@ -189,7 +190,8 @@ static void dowatch()
     }
 }
 
-char ibuf[4096];
+#define IBUFSIZ 4096
+char ibuf[IBUFSIZ];
 static void teardown(int signo)
 {
     fprintf(errfd, "Shutdown\n");
@@ -201,6 +203,16 @@ static void teardown(int signo)
     gpst[bestgps].mn++;
     rotatekml();
     fclose(errfd);
+
+    int bfd = open( backupstate, O_RDWR | O_CREAT, 0600 );
+    write( bfd, &bestgps, sizeof(bestgps) );
+    write( bfd, gpst, sizeof(gpst) );
+    write( bfd, gpsat, sizeof(gpsat) );
+#ifdef HARLEY
+    extern struct harley hstat;
+    write( bfd, &hstat, sizeof(hstat) );
+#endif
+    close(bfd);
 
     unlink(pidlockfile);
     exit(0);
@@ -350,9 +362,11 @@ void usage(char *errstr) {
 	    "-l path-to-log-directory\n"
 	    "-i MINUTES (5) for kml split interval\n"
 	    "-w path to web directory\n"
+	    "-b backup state file path\n"
 	    "-p PORT (2947)\n"
 	    "-r (allow run as root)\n"
-	    "-h print this and exit\n", errstr);
+	    "-h print this and exit\n"
+	    "Version 0.7\n", errstr);
     exit(1);
 }
 
@@ -377,6 +391,9 @@ int main(int argc, char *argv[])
 	    break;
 	case 'l':
 	    logdirprefix = argv[++n];
+	    break;
+	case 'b':
+	    backupstate = argv[++n];
 	    break;
 	case 'w':
 	    webdirprefix = argv[++n];
@@ -411,34 +428,7 @@ int main(int argc, char *argv[])
     if (pilock())
         exit(-1);
 
-extern char *dogmap,*satstat,*radfmt;
-
-    strcpy( ibuf, webdirprefix );
-    strcat( ibuf, "/" );
-    strcat( ibuf, "dogmap.html" );
-    n = open( ibuf, O_RDONLY );
-    if( n < 0 )
-	exit(-3);
-    i = lseek( n, 0, SEEK_END ); 
-    lseek( n, 0, SEEK_SET ); 
-    dogmap = malloc( i + 1 );
-    read( n, dogmap, i );
-    dogmap[i] = 0;
-    close(n);
-
-    strcpy( ibuf, webdirprefix );
-    strcat( ibuf, "/" );
-    strcat( ibuf, "satstat.html" );
-    n = open( ibuf, O_RDONLY );
-    if( n < 0 )
-	exit(-3);
-    i = lseek( n, 0, SEEK_END ); 
-    lseek( n, 0, SEEK_SET ); 
-    satstat = malloc( i + 1 );
-    read( n, satstat, i );
-    satstat[i] = 0;
-    close(n);
-
+extern char *radfmt;
     strcpy( ibuf, webdirprefix );
     strcat( ibuf, "/" );
     strcat( ibuf, "radfmt.html" );
@@ -452,23 +442,19 @@ extern char *dogmap,*satstat,*radfmt;
     radfmt[i] = 0;
     close(n);
 
+    int bfd = open( backupstate, O_RDONLY );
+    if( bfd >= 0 ) {
+	read( bfd, &bestgps, sizeof(bestgps) );
+	read( bfd, gpst, sizeof(gpst) );
+	read( bfd, gpsat, sizeof(gpsat) );
 #ifdef HARLEY
-extern char *hogstat;
-    strcpy( ibuf, webdirprefix );
-    strcat( ibuf, "/" );
-    strcat( ibuf, "hogstat.html" );
-    n = open( ibuf, O_RDONLY );
-    if( n < 0 )
-	exit(-3);
-    i = lseek( n, 0, SEEK_END ); 
-    lseek( n, 0, SEEK_SET ); 
-    hogstat = malloc( i + 1 );
-    read( n, hogstat, i );
-    hogstat[i] = 0;
-    close(n);
+	extern struct harley hstat;
+	read( bfd, &hstat, sizeof(hstat) );
 #endif
-
-    memset(&gpst, 0, sizeof(gpst));
+	close(bfd);
+    }
+    else
+	memset(&gpst, 0, sizeof(gpst));
 
     errfd = fopen("/tmp/gpsd.log", "w");
     fprintf(errfd, "Startup\n");
@@ -533,7 +519,7 @@ extern char *hogstat;
                 continue;
             }
             if (FD_ISSET(acpt[i], &fds)) {
-                n = read(acpt[i], ibuf, 4095);
+                n = read(acpt[i], ibuf, IBUFSIZ-1);
                 if (n <= 0) {
                     if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
                         continue;
@@ -543,16 +529,24 @@ extern char *hogstat;
                     continue;
                 }
                 ibuf[n] = 0;
-                if (strstr(ibuf, "HTTP/1")) {    // http request
-                    if (!strncmp(ibuf, "GET ", 4)) {     // only one allowed
-                        strncpy(xbuf, ibuf, 512);
-			char *c = strchr(xbuf,'\n');
-			if( *c )
-			    *c = 0;
-                        xbuf[512] = 0;  // force null term string
-                        dowebget();
-                        write(acpt[i], xbuf, strlen(xbuf));
-                    }
+                if (!strncmp(ibuf, "GET ", 4) && strstr(ibuf, "HTTP/1")) {    // http request
+		    strncpy(xbuf, ibuf, IBUFSIZ-1);
+		    char *c = strchr(xbuf,'\n');
+		    if( *c )
+			*c = 0;
+   //TODO - send acpt[i] to dowebget and have it handle this
+		    xbuf[IBUFSIZ-1] = 0;  // force null term string
+		    if( dowebget() ) {
+			static const char resp1[] = "HTTP/1.1 200 OK\r\n";
+			static const char resp2[] = "Content-Type: text/html\r\n\r\n"; // html, text, json, xml...
+			write(acpt[i], resp1, strlen(resp1));
+			write(acpt[i], resp2, strlen(resp2));
+			write(acpt[i], xbuf, strlen(xbuf));
+		    }
+		    else {
+			char resp9[] = "HTTP/1.1 404 Not Found \r\n\r\n";
+			write(acpt[i], resp9, strlen(resp9)); 
+		    }
                     close(acpt[i]);
                     acpt[i] = -1;
                     continue;
@@ -561,62 +555,64 @@ extern char *hogstat;
 
 		if( ibuf[0] == ':' ) {
 
-	if( firsttime ) {
-	    //	    fprintf( stderr, "start %d\n", kmlinterval );
-	    firsttime = 0;
-	    //place for OBD data before time and GPS gpst[bestgps].lock for position
-	    primelocaltime();
-	    if (kmlinterval)
-		logfd = fopen("prlock.kml", "a+b");
-	    add2kml("<Document><name>Pre-Lock</name><Placemark><LineString><coordinates>0,0,0\n");
+		    if( firsttime ) {
+			//	    fprintf( stderr, "start %d\n", kmlinterval );
+			firsttime = 0;
+			//place for OBD data before time and GPS gpst[bestgps].lock for position
+			primelocaltime();
+			if (kmlinterval)
+			    logfd = fopen("prlock.kml", "a+b");
+			add2kml("<Document><name>Pre-Lock</name><Placemark><LineString><coordinates>0,0,0\n");
 	}
 
-		char *mrk = ibuf - 1;
-		for(;;) {
-		    char *bp = mrk + 1;
-		    mrk = strchr( bp, '\n' );
-		    if( !mrk )
-			break;
-		    *mrk = 0; // isolate each line
+		    char *mrk = ibuf - 1;
+		    for(;;) {
+			char *bp = mrk + 1;
+			mrk = strchr( bp, '\n' );
+			if( !mrk )
+			    break;
+			*mrk = 0; // isolate each line
 
-                if (!strncmp(bp, ":GPS", 4)) {
-                    kmlanno(bp);
-                    char *b = &bp[1];
-                    b = strchr(b, ':'); // find second colon
-                    if (b) {
-                        b++;
-                        b = strchr(b, ':');     // find third colon
-                        if (b)
-                            b++;
-                    }
-                    if (!b)
-                        continue;
-                    doraw(b);
-                    if (mainlock)
-                        mainlock--;
-                    i = getgpsinfo(acpt[i], bp, thisms);
-                    // fresh, good data plus lock, reset aux counter
-                    if (gpst[bestgps].gpsfd == acpt[i] && i > 0 && gpst[bestgps].lock)  ///////////////////////////////////////////////////
-                        mainlock = 100;
-                    continue;
-                }
-                if (!strncmp(bp, ":ANO", 4)) {
-                    kmlanno(bp);
-                    continue;
-                }
+			if (!strncmp(bp, ":GPS", 4)) {
+			    kmlanno(bp);
+			    char *b = &bp[1];
+			    b = strchr(b, ':'); // find second colon
+			    if (b) {
+				b++;
+				b = strchr(b, ':');     // find third colon
+				if (b)
+				    b++;
+			    }
+			    if (!b)
+				continue;
+			    doraw(b);
+			    if (mainlock)
+				mainlock--;
+			    i = getgpsinfo(acpt[i], bp, thisms);
+			    // fresh, good data plus lock, reset aux counter
+			    if (gpst[bestgps].gpsfd == acpt[i] && i > 0 && gpst[bestgps].lock)  ///////////////////////////////////////////////////
+				mainlock = 100;
+			    continue;
+			}
+			if (!strncmp(bp, ":ANO", 4)) {
+			    kmlanno(bp);
+			    continue;
+			}
 #ifdef HARLEY
-                if (!strncmp(bp, ":HOGDJDAT:", 10)) {
-extern void calchog(char *, int);
-		    char *c = strchr( bp+11, ':' );
-		    if( !c )
-			continue;
-		    c = strchr( c+1, 'J' );
-		    if( !c )
-			continue;
-                    getms();
-                    calchog(c, thisms);
-                    kmlanno(bp);
-                    continue;
+			if(!strncmp(bp, ":HOGDJDAT:", 10)) {
+			    extern void calchog(char *, int);
+			    char jbuf[256]; // calchog alters buffer, so use local copy
+			    strncpy( jbuf, bp, 120 );
+			    char *c = strchr( jbuf+10, ':' ); // bypass timestamp
+			    if( !c )
+				continue;
+			    c = strchr( c, 'J' ); // J is start of message
+			    if( !c )
+				continue;
+			    getms();
+			    calchog(c, thisms);
+			    kmlanno(jbuf);
+			    continue;
                 }
 #endif
 		} // line loop

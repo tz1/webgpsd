@@ -1,12 +1,9 @@
 #include "webgpsd.h"
 
-char *dogmap,*satstat,*radfmt;
-#ifdef HARLEY
-char *hogstat;
-#endif
+char *radfmt;
 
 // kml network link feed for google earth
-static char gpskml[] = "<Document>"
+static const char gpskml[] = "<Document>"
   "<flyToView>1</flyToView>"
   "<name>%s %d.%03d</name>"
   "<LookAt>"
@@ -45,22 +42,18 @@ void dokml(char *c)
 }
 
 // moving google map v2 API XML, see GDownloadUrl
-static char xmldata[] = "<xml><markers><marker lat=\"%d.%06d\" lng=\"%d.%06d\"/></markers></xml>";
+static const char xmldata[] = "<xml><markers><marker lat=\"%d.%06d\" lng=\"%d.%06d\"/></markers></xml>";
 static void doxml()
 {
     sprintf(xbuf, xmldata, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000),
       gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000));
 }
 #ifdef HARLEY
-static void dohogstat()
-{
-    strcpy(xbuf, hogstat);
-}
+
 extern struct harley hstat;
 // JSON for web - generally NOT gpsd-ng (that will go into the mainline)
-static char hogdata[] =
+static const char hogdata[] =
     "{rpm:%d,speed:%d,full:%d,gear:%d,clutch:%d,neutral:%d,temp:%d,turn:%d,odo:%d,fuel:%d}\r\n";
-
 static void dohog()
 {
     sprintf(xbuf, hogdata,
@@ -69,8 +62,8 @@ static void dohog()
 }
 #endif
 // JSON for web - generally NOT gpsd-ng (that will go into the mainline)
-static char jsondata[] =
-  "{lat:%d.%06d,lon:%d.%06d,alt:%d.%03d,pdop:%d.%02d,hdop:%d.%02d,vdop:%d.%02d,track:%d.%03d,speed:%d.%03d,mode:%d,ns:%d,\r\nu:[";
+static const char jsondata[] =
+  "{lat:%d.%06d,lon:%d.%06d,alt:%d.%03d,pdop:%d.%02d,hdop:%d.%02d,vdop:%d.%02d,track:%d.%03d,speed:%d.%03d,mode:%d,lock:%d,ns:%d,\r\nu:[";
 static void dojson()
 {
     int spd = gpst[bestgps].gspd;       // * 447 / 1000; // mph to m/s
@@ -81,7 +74,7 @@ static void dojson()
       gpst[bestgps].hdop / 1000, gpst[bestgps].hdop % 1000 / 10,
       gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10,
       gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000,
-      spd / 1000, spd % 1000, gpst[bestgps].fix, gpst[bestgps].pnsats + gpst[bestgps].lnsats);
+      spd / 1000, spd % 1000, gpst[bestgps].fix, gpst[bestgps].lock, gpst[bestgps].pnsats + gpst[bestgps].lnsats);
     if( bestgps < 0 || ( !gpst[bestgps].pnsats && ! gpst[bestgps].lnsats)) {
 	 strcat(xbuf, "]}\r\n");
 	 return;
@@ -183,7 +176,7 @@ void dongjson()
         }
         break;
     }
-    // satelliter status
+    // satellite status
     c = xbuf + strlen(xbuf);
     sprintf(c, ngsjson0,
       gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10,
@@ -203,12 +196,6 @@ void dongjson()
 }
 #endif
 
-// Google Map - self contained, uses web json
-static void dogmapx()
-{
-    strcpy(xbuf, dogmap);
-}
-
 // Wunderground.com severe weather radar, mostly self-contained with refreshing
 static void dorad(int size, int picwidth, int picheight)
 {
@@ -217,19 +204,19 @@ static void dorad(int size, int picwidth, int picheight)
 }
 
 // Standard gps view - menu plus gps source status
-static char gpspage1[] =        // menu
+static const char gpspage1[] =        // menu
   "<HEAD><TITLE>%s</TITLE><meta http-equiv=\"refresh\" content=\"5\">"
   "<meta name = \"viewport\" content = \"width = 480\">"
-  "<style type=\"text/css\">table a {display: block; width: 100%; height: 100%}</style>"
+  "<style type=\"text/css\">table a {display: block; width: 100%%; height: 100%%}</style>"
   "</HEAD><BODY>\n"
   "<table><tr><td>"
   "\n<table border=1>"
-  "<tr><td><a href=/dogmap.html><h1><br>MAP<br><br></a>"
-  "<tr><td><a href=/hogstat.html><h1><br>HOG<br><br></a>"
-  "<tr><td><a href=/satstat.html><h1><br>SatStat<br><br></a>"
-  "<tr><td><a href=/radar20.html><h1><br>RADAR<br><br></a>" "</table>\n";
+  "<tr><td><a href=/dogmap.html><h1>MAP<br><br></a>"
+  "<tr><td><a href=/hogstat.html><h1>HOG<br><br></a>"
+  "<tr><td><a href=/satstat.html><h1>SatStat<br><br></a>"
+  "<tr><td><a href=/radar20.html><h1>RADAR<br><br></a>" "</table>\n";
 
-static char gpspage2[] =        // source status
+static const char gpspage2[] =        // source status
   "<td>\n<table border=%d><tr><td>"
   "%02d-%02d-%02d %02d:%02d:%02d<tr><td>"
   "lat=%d.%06d<tr><td>lon=%d.%06d<tr><td>"
@@ -239,7 +226,7 @@ static char gpspage2[] =        // source status
   "trk=%d.%03d<tr><td>" "PDoP=%d.%02d<tr><td>" "HDoP=%d.%02d<tr><td>" "VDoP=%d.%02d</table>\n"
   "<td>\n<table border=%d><tr><th>PRN<th>Elev<th>Azim<th>Sgnl<th>Usd</tr>";
 
-static char gpspage9[] =        // closing
+static const char gpspage9[] =        // closing
   "</table>\n</BODY></HTML>";
 
 static void doweb()
@@ -284,14 +271,8 @@ static void doweb()
     strcpy(&xbuf[strlen(xbuf)], gpspage9);
 }
 
-// self-contained javascript sat html5 canvas using web json
-static void dosats()
-{
-    strcpy(xbuf, satstat);
-}
-
 // really primitive parser
-void dowebget()
+int dowebget()
 {
     char *c;
     if (strstr(xbuf, "gpsdata") && strstr(xbuf, ".kml "))
@@ -303,17 +284,11 @@ void dowebget()
 #ifdef HARLEY
     else if (strstr(xbuf, "hogstat.json"))
         dohog();
-    else if (strstr(xbuf, "hogstat.html"))
-        dohogstat();
 #endif
     else if (strstr(xbuf, "gpsstat.json"))
         dojson();
     else if (strstr(xbuf, "gpsdata.xml"))
         doxml();
-    else if (strstr(xbuf, "dogmap.html"))
-        dogmapx();
-    else if (strstr(xbuf, "satstat.html"))
-        dosats();
     else if ((c = strstr(xbuf, "radar"))) {
         c += 5;
         int i = atoi(c);
@@ -322,6 +297,38 @@ void dowebget()
         int w = 340, h = 340;
         dorad(i, w, h);
     }
-    else
+    else {
+	extern char *webdirprefix;
+	char ibuf[256];
+	strncpy( ibuf, webdirprefix, 256 );
+	ibuf[255] = 0;
+	strcat( ibuf, "/" );
+	do {
+	    char *c = strchr( xbuf, ' ' );
+	    if( !c )
+		break;
+	    char *d = strchr( ++c, ' ' );
+	    if( !*d )
+		break;
+	    *d = 0;
+	    strcat( ibuf, c );
+	    int n = open( ibuf, O_RDONLY );
+	    if( n < 0 )
+		break;
+	    int i = lseek( n, 0, SEEK_END ); 
+	    lseek( n, 0, SEEK_SET ); 
+	    if( i > BUFSIZ )
+		break;
+	    if( i != read( n, xbuf, i ) ) {
+		close(n);
+		break;
+	    }
+	    xbuf[i] = 0;
+	    close(n);
+	    return 1;
+	} while(0);
+
         doweb();
+    }
+    return 1;
 }

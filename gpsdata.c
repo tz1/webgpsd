@@ -4,7 +4,7 @@ static char kmlname[80] = "";
 
 //kml template
 
-static char kmlhead[] =
+static const char kmlhead[] =
   "<Document>\n"
   "<name>%s</name>\n"
   "<LookAt>"
@@ -19,14 +19,14 @@ static char kmlhead[] =
   "<Style id=\"x\"><LineStyle><width>2</width><color>ff0000ff</color></LineStyle>"
   "<PolyStyle><color>33000000</color></PolyStyle></Style>\n" "<Placemark><LineString><coordinates>\n";
 
-static char pmarkfmt[] =
+static const char pmarkfmt[] =
   "%d.%06d,%d.%06d,%d.%03d\n"
   "</coordinates></LineString></Placemark>\n"
   "<Placemark>\n"
   "<TimeStamp><when>20%02d-%02d-%02dT%02d:%02d:%02dZ</when></TimeStamp>\n"
   "<styleUrl>#x</styleUrl><LineString><extrude>1</extrude>" "<altitudeMode>relativeToGround</altitudeMode><coordinates>\n";
 
-static char kmltail[] = "</coordinates></LineString></Placemark>\n</Document>\n";
+static const char kmltail[] = "</coordinates></LineString></Placemark>\n</Document>\n";
 
 //NMEA field data extraction helpers
 

@@ -1,27 +1,29 @@
+prlock.kml formatting error (add2kml doesn't appear to rewind).
+add lock to satstats
 DOCUMENT CHUMBY IN README, update for files
 
-Add option to set clocks on chumby.
+Chumby: LEDS
+
+/tmp/laststate - save gps for warm start, not 0,0
+
+Add option to set clocks on chumby (code there but inactive)
 
 Harley:
 	add status to main if active
 	j1850 watchdog in hogdev (?)
-
-
-
+	Sleep webgpsd (suspend logging to current.kml or if short timeout do a rotatelog) if no J1850 data.
 
 Config / comline:
-	where to store?
-        Listen ports as array, list in cmdline?
-        chdir for logfiles
-        err log name/loc?
+       /etc/webgpsd
+       multi listen ports?
+       follow comline?
 
 Sources:
-        python connect/send script (looped?) launcher
-        serial port set comm via termios?
+       serial port set comm via termios?
 
 Web:
-        json array of sources?
-	(need something like this for gpsd-ng)
+       json array of sources?
+       (need something like this for gpsd-ng)
 
 GPSD:
         move to json commands (?), sync format with gpsd-ng.

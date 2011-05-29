@@ -13,8 +13,14 @@ all: webgpsd devgpsrc kmzmerge kml2kmz
 webgpsd: $(OBJS)
 	$(CC) -o $@ $^ $(LIBS)
 
+SERVHTML = dogmap.html satstat.html radfmt.html hogstat.html 
 #HEADHTML = dogmap.h satstat.h radfmt.h hogstat.h 
 #web.o: web.c $(HEADHTML)
+
+install: all
+	 mkdir -p /etc/webgpsd
+	 cp $(SERVHTML) /etc/webgpsd
+	 cp webgpsd devgpsrc /usr/bin
 
 #%.h : %.html
 #	./html2head $@
