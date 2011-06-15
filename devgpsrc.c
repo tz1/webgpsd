@@ -33,10 +33,11 @@ int main(int argc, char *argv[] ) {
 	cfmakeraw(&termst);
 	termst.c_iflag |= IGNCR;
 	termst.c_lflag |= ICANON;
+	cfsetspeed(&termst,B115200);
 	tcsetattr(serfd, TCSANOW, &termst);
 	tcflush(serfd, TCIOFLUSH);
     }
-    else {
+    else { // serfd defaults to stdin
 	sprintf( nodeid, "%04d", getpid() );
     }
     memset((char *) &sin, 0, sizeof(sin));
@@ -63,7 +64,12 @@ int main(int argc, char *argv[] ) {
 	while( i && buf[i] <= ' ' )
 	    buf[i--]=0;
 	gettimeofday(&tv, NULL);
-	sprintf( xbuf, ":GPSD%s:%03ld:%s\n", nodeid, tv.tv_usec / 1000, buf );
+	if( buf[0] == '$' )
+	    sprintf( xbuf, ":GPSD%s:%03ld:%s\n", nodeid, tv.tv_usec / 1000, buf );
+	else if( buf[0] == 'J' )
+	    sprintf( xbuf, ":HOGJDAT:%03ld:%s\n", tv.tv_usec / 1000, buf );
+	else
+	    sprintf( xbuf, ":ANOX%s:%03ld:%s\n", nodeid, tv.tv_usec / 1000, buf );
 	write(wgsock, xbuf, strlen(xbuf));
 	//	printf("%s",xbuf);
     }

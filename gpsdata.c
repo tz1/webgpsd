@@ -203,20 +203,28 @@ static int firslock = 0;
 static void writelock()
 {
     firslock = 1;
-#if 0
     char cmd[256];
     int i;
-    // set system lock - linux generic
+
+#if 0
+    // set system clock - linux generic
     sprintf( cmd, "sudo date -u -s %02d/%02d/20%02d", gpst[cidx].mo,gpst[cidx].dy,gpst[cidx].yr );
     sprintf( cmd, "sudo date -u -s %02d:%02d:%02d", gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
-    sprintf( cmd, "sudo hwlock --systohc" );
+    sprintf( cmd, "sudo hwclock --systohc" );
+    i = system(cmd);
+    fprintf( errfd, "Set Time %d=%s\n", i, cmd );
+#endif
 
+#ifdef CHUMBY
     //chumby - need two, first for year, then for seconds.
     sprintf( cmd, "date -u -s 20%02d%02d%02d%02d%02d", gpst[cidx].yr,gpst[cidx].mo,gpst[cidx].dy,
 	     gpst[cidx].hr,gpst[cidx].mn);
     sprintf( cmd, "date -u -s %02d%02d%02d%02d.%02d", gpst[cidx].mo,gpst[cidx].dy,
 	     gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
-    sprintf( cmd, "hwlock -wu" );
+    sprintf( cmd, "hwclock -wu" );
+    i = system(cmd);
+    fprintf( errfd, "Set Time %d=%s\n", i, cmd );
+#endif
 
 #ifdef NOKIAN810
     // nokia
@@ -228,7 +236,7 @@ static void writelock()
         system("sudo /usr/sbin/chroot /mnt/initfs /usr/bin/retutime -i");       // update system from RTC
     }
 #endif
-#endif
+
 }
 
 // process NMEA to set data
