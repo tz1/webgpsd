@@ -67,7 +67,7 @@ int main(int argc, char *argv[] ) {
 	if( buf[0] == '$' )
 	    sprintf( xbuf, ":GPSD%s:%03ld:%s\n", nodeid, tv.tv_usec / 1000, buf );
 	else if( buf[0] == 'J' )
-	    sprintf( xbuf, ":HOGJDAT:%03ld:%s\n", tv.tv_usec / 1000, buf );
+	    sprintf( xbuf, ":HOGDJDAT:%03ld:%s\n", tv.tv_usec / 1000, buf );
 	else
 	    sprintf( xbuf, ":ANOX%s:%03ld:%s\n", nodeid, tv.tv_usec / 1000, buf );
 	write(wgsock, xbuf, strlen(xbuf));
