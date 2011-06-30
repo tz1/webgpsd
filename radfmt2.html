@@ -1,0 +1,84 @@
+<html>
+  <head><title>Radar View</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <style>html {margin:0px;padding:0px;border:0px }</style>
+    <style>body {margin:0px;padding:0px;border:0px }</style>
+    <style>radmap {margin:0px;padding:0px;border:0px }</style>
+
+<script>
+var radius = 20
+var tmo;
+var map;
+var gps = {lat:42.5,lon:-83.3}
+var frames = 1
+
+function setrad() {
+    wd = window.innerWidth
+    ht = window.innerHeight
+    mx = ht;
+    if( wd < mx )
+      mx = wd;
+    mx *= 0.9
+    x = ""
+    x = x +"<img src=\"http://radblast-mi.wunderground.com/cgi-bin/radar/WUNIDS_composite?centerlat=" 
+    x = x + gps.lat + "&centerlon=" + gps.lon
+    x = x + "&radius="+radius+"&type=N0R&frame=0&num="+frames+"&delay=5&width="+mx+"&height="+mx
+    x = x + "&newmaps=1&r=1159834180&showstorms=0&theme=WUNIDS_severe&rainsnow=0&dummy="+Math.random()+"\">"
+    map.innerHTML = x  + "<br>" + radius
+    tmo = setTimeout("getrad()",150000)
+}
+function zoomer(event) {
+    return;
+    radius /= event.scale;
+    setrad()
+}
+function zoomin(event) {
+    radius /= 2
+    setrad()
+}
+function zoomout(event) {
+    radius *= 2
+    setrad()
+}
+function pan(event) {
+    zc = Math.cos(Math.PI/180*gps.lat)
+    dlat = (event.clientY - mx/2) / mx * radius / 30
+    dlon = (mx/2 - event.clientX) / mx / zc * radius / 30
+    gps.lat = gps.lat - dlat
+    gps.lon = gps.lon - dlon
+    setrad()
+}
+function getrad() {
+    if( tmo )
+	clearTimeout(tmo)
+    map = document.getElementById('radmap')
+    radius = 20
+    xh = new XMLHttpRequest()
+    xh.open("GET","gpsstat.json", false)
+    xh.send()
+    gps = eval('('+xh.responseText+')', null)
+    if( !gps.lat )
+	gps = {lat:42.5,lon:-83.3}
+    setrad()
+}
+function anim(event) {
+    frames = 6 - frames
+    setrad()
+}
+</script >
+</head>
+<body onload="getrad()">
+<table>
+<tr><td colspan=3>	<div id="radmap" onmousedown="pan(event)">Locating</div>
+<tr>
+<h2>
+<td align=center style="background-color:lightgray"><div id="zin" onmousedown="zoomin(event)"><br>ZoomIn<br></div>
+<td align=center><div id="ref" onmousedown="getrad(event)"><br>Reset<br></div>
+<td align=center style="background-color:lightgray"><div id="ref" onmousedown="anim(event)"><br>Tog Ani<br></div>
+<td align=center><div id="zout" onmousedown="zoomout(event)"><br>ZoomOut<br></div>
+</h2>
+</table>
+</body>
+</html>

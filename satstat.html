@@ -151,12 +151,18 @@ function update() {
     if( rd <= 90 ) {
         canv.strokeStyle = magent
         //canv.strokeRect(100-rd,100-rd,rd+rd,rd+rd)
-        rd = rd * r / 100;
+        rd = rd * r / 100
         canv.beginPath()
         canv.moveTo(r+rd,r)
         canv.arc(r,r,rd,0,pi2,true)
         canv.stroke()
     }
+
+    v = r / 10
+    canv.font = v +"px sans-serif"
+    canv.fillStyle = white
+    canv.fillText(gps.speed , 2*r/5, v)
+    canv.fillText(gps.track, 8*r/5, v)
 
 }
 </script>

@@ -211,10 +211,10 @@ static const char gpspage1[] =        // menu
   "</HEAD><BODY>\n"
   "<table><tr><td>"
   "\n<table border=1>"
-  "<tr><td><a href=/dogmap.html><h1>MAP<br><br></a>"
-  "<tr><td><a href=/hogstat.html><h1>HOG<br><br></a>"
-  "<tr><td><a href=/satstat.html><h1>SatStat<br><br></a>"
-  "<tr><td><a href=/radar20.html><h1>RADAR<br><br></a>" "</table>\n";
+  "<tr><td><a href=%s/dogmap.html><h1>MAP<br><br></a>"
+  "<tr><td><a href=%s/hogstat.html><h1>HOG<br><br></a>"
+  "<tr><td><a href=%s/satstat.html><h1>SatStat<br><br></a>"
+  "<tr><td><a href=%s/radar20.html><h1>RADAR<br><br></a>" "</table>\n";
 
 static const char gpspage2[] =        // source status
   "<td>\n<table border=%d><tr><td>"
@@ -229,14 +229,14 @@ static const char gpspage2[] =        // source status
 static const char gpspage9[] =        // closing
   "</table>\n</BODY></HTML>";
 
-static void doweb()
+static void doweb(char * addr)
 {
     char *c;
     int i,n;
     c = strchr(xbuf, '&');
     if (!c)
         c = "";
-    sprintf(xbuf, gpspage1, rtname);
+    sprintf(xbuf, gpspage1, rtname, addr, addr, addr, addr);
     for (i = 0; i < MAXSRC; i++) {
         if (gpst[i].gpsfd < -1)
             break;
@@ -272,7 +272,7 @@ static void doweb()
 }
 
 // really primitive parser
-int dowebget()
+int dowebget(char * webaddr)
 {
     char *c;
     if (strstr(xbuf, "gpsdata") && strstr(xbuf, ".kml "))
@@ -328,7 +328,7 @@ int dowebget()
 	    return 1;
 	} while(0);
 
-        doweb();
+        doweb(webaddr);
     }
     return 1;
 }

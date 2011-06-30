@@ -15,7 +15,6 @@ struct gpsstate gpst[MAXSRC];
 struct gpssats gpsat[MAXSRC];
 
 FILE *errfd = NULL;
-FILE *logfd = NULL;
 char *xbuf;
 
 extern void add2kml(char *);
@@ -200,9 +199,6 @@ static void teardown(int signo)
 	fprintf( errfd, "ibuf: %s\n", ibuf );
     }
     fflush(errfd);
-    gpst[bestgps].mn++;
-    rotatekml();
-    fclose(errfd);
 
     int bfd = open( backupstate, O_RDWR | O_CREAT, 0600 );
     write( bfd, &bestgps, sizeof(bestgps) );
@@ -213,6 +209,10 @@ static void teardown(int signo)
     write( bfd, &hstat, sizeof(hstat) );
 #endif
     close(bfd);
+
+    gpst[bestgps].mn++;
+    rotatekml();
+    fclose(errfd);
 
     unlink(pidlockfile);
     exit(0);
@@ -379,7 +379,7 @@ int main(int argc, char *argv[])
     fd_set fds, fds2, fdserr, lfds;
     struct sockaddr_in sin;
     //    struct timeval tv;
-    unsigned int mainlock = 0;
+    //    unsigned int mainlock = 0, lastharley = 0;
     unsigned char rover = 1; // no root run;
     cmdname = argv[0];
     for( n = 1; n < argc; n++ ) {
@@ -452,6 +452,15 @@ extern char *radfmt;
 	read( bfd, &hstat, sizeof(hstat) );
 #endif
 	close(bfd);
+	memset( gpsat, 0, sizeof(gpsat) );
+	for( i = 0 ; i < MAXSRC; i++ ) { // grab back coord, but mark rest invalid
+	    gpst[i].lock = 0;
+	    gpst[i].fix = 0;
+	    gpst[i].pnsats = 0;
+	    gpst[i].pnused = 0;
+	    gpst[i].lnsats = 0;
+	    gpst[i].lnused = 0;
+	}
     }
     else
 	memset(&gpst, 0, sizeof(gpst));
@@ -536,7 +545,15 @@ extern char *radfmt;
 			*c = 0;
    //TODO - send acpt[i] to dowebget and have it handle this
 		    xbuf[IBUFSIZ-1] = 0;  // force null term string
-		    if( dowebget() ) {
+		    struct sockaddr_in sa;
+		    unsigned n1 = sizeof(sa);
+		    char webaddr[20];
+		    if( !getsockname(acpt[i], (struct sockaddr *) &sa, &n1) && n1 )
+			sprintf(webaddr,"http://%s:%d", inet_ntoa(sa.sin_addr), htons(sa.sin_port));
+		    else
+			webaddr[0] = 0;
+		    
+		    if( dowebget(webaddr) ) {
 			static const char resp1[] = "HTTP/1.1 200 OK\r\n";
 			static const char resp2[] = "Content-Type: text/html\r\n\r\n"; // html, text, json, xml...
 			write(acpt[i], resp1, strlen(resp1));
@@ -561,7 +578,7 @@ extern char *radfmt;
 			//place for OBD data before time and GPS gpst[bestgps].lock for position
 			primelocaltime();
 			if (kmlinterval)
-			    logfd = fopen("prlock.kml", "a+b");
+			    prelog();
 			add2kml("<Document><name>Pre-Lock</name><Placemark><LineString><coordinates>0,0,0\n");
 	}
 
@@ -574,7 +591,8 @@ extern char *radfmt;
 			*mrk = 0; // isolate each line
 
 			if (!strncmp(bp, ":GPS", 4)) {
-			    kmlanno(bp);
+			    char save[256];
+			    strncpy( save, bp, 255 );
 			    char *b = &bp[1];
 			    b = strchr(b, ':'); // find second colon
 			    if (b) {
@@ -586,12 +604,14 @@ extern char *radfmt;
 			    if (!b)
 				continue;
 			    doraw(b);
-			    if (mainlock)
-				mainlock--;
+//			    if (mainlock)
+//				mainlock--;
 			    i = getgpsinfo(acpt[i], bp, thisms);
+			    // above may rotate log
+			    kmlanno(save);
 			    // fresh, good data plus lock, reset aux counter
-			    if (gpst[bestgps].gpsfd == acpt[i] && i > 0 && gpst[bestgps].lock)  ///////////////////////////////////////////////////
-				mainlock = 100;
+//			    if (gpst[bestgps].gpsfd == acpt[i] && i > 0 && gpst[bestgps].lock)
+//				mainlock = 100;
 			    continue;
 			}
 			if (!strncmp(bp, ":ANO", 4)) {
@@ -600,6 +620,7 @@ extern char *radfmt;
 			}
 #ifdef HARLEY
 			if(!strncmp(bp, ":HOGDJDAT:", 10)) {
+//			    lastharley = 100;
 			    extern void calchog(char *, int);
 			    char jbuf[256]; // calchog alters buffer, so use local copy
 			    strncpy( jbuf, bp, 120 );
@@ -607,7 +628,7 @@ extern char *radfmt;
 			    if( !c )
 				continue;
 			    c = strchr( c, 'J' ); // J is start of message
-			    if( !c )
+			    if( !c || strlen(c) < 4)
 				continue;
 			    getms();
 			    calchog(c, thisms);

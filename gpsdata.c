@@ -123,18 +123,24 @@ static void getll(int f)
 //KML Logging
 static char kmlstr[BUFLEN];
 static int kmlful = 0;
+static FILE *logfd = NULL;
 
+void prelog() {
+    logfd = fopen("prlock.kml", "w+b");
+}
+
+static int firstlock = 0;
 // append data, close KML, and rewind redy for next data
 static void dokmltail()
 {
-    if (!logfd)
-        return;
-    strcpy(&kmlstr[kmlful], kmltail);
-    fputs(kmlstr, logfd);
+    if( logfd ) {
+	strcpy(&kmlstr[kmlful], kmltail);
+	fputs(kmlstr, logfd);
+	fflush(logfd);
+	fseek(logfd, -strlen(kmltail), SEEK_CUR);
+    }
     kmlful = 0;
     kmlstr[0] = 0;
-    fflush(logfd);
-    fseek(logfd, -strlen(kmltail), SEEK_CUR);
 }
 
 void add2kml(char *add)
@@ -160,53 +166,26 @@ static void kmzip(char *fname)
     }
 }
 
+char currkml[64]="prlock.kml";
 void rotatekml()
 {
-    char lbuf[256];
-    struct timeval tv;
-    struct tm *tmpt;
-
-    // use syslock to avoid collisions and nonlocked time errors
-    gettimeofday(&tv, NULL);
-    tmpt = gmtime(&tv.tv_sec);
-
-    sprintf(lbuf, "%02d%02d%02d%02d%02d%02d.kml",
-      tmpt->tm_year % 100, 1 + tmpt->tm_mon, tmpt->tm_mday, tmpt->tm_hour, tmpt->tm_min, tmpt->tm_sec);
-
-    // added gpst[cidx].mn++ to teardown - need to test
-    if (!strcmp(lbuf, kmlname))
-        lbuf[strlen(lbuf) - 5]++;       // increase minutes to avoid overwrite
-    // normally only happens at end when sigint closes too quickly.
-    strcpy(kmlname, lbuf);
     if (logfd) {
         dokmltail();            // write out anything remaining in buffer
-        fclose(logfd);
-        if (rename("current.kml", lbuf)) {      // no current.kml yet, starting
-            lbuf[10] = 0;
-            strcat(lbuf, ".lastcur.kml");
-            rename("../prevcur.kml", lbuf);
-            rename("prevcur.kml", lbuf);
-            kmzip(lbuf);
-            lbuf[10] = 0;
-            strcat(lbuf, ".prlock.kml");
-            //      if( ftell(logfd) <= strlen(kmltail) * 2 ) {} 
-            // if no data, don't rename prelock
-            rename("../prlock.kml", lbuf);
-            rename("prlock.kml", lbuf);
-        }
-        kmzip(lbuf);
+	fclose(logfd);
     }
+    kmzip( currkml );
+    unlink( "current.kml" );
+    strcpy( currkml, "currtmp.kml" );
 }
 
 // sync internal lock on first lock
-static int firslock = 0;
 static void writelock()
 {
-    firslock = 1;
-    char cmd[256];
-    int i;
+    firstlock = 1;
 
 #if 0
+    char cmd[256];
+    int i;
     // set system clock - linux generic
     sprintf( cmd, "sudo date -u -s %02d/%02d/20%02d", gpst[cidx].mo,gpst[cidx].dy,gpst[cidx].yr );
     sprintf( cmd, "sudo date -u -s %02d:%02d:%02d", gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
@@ -216,6 +195,8 @@ static void writelock()
 #endif
 
 #ifdef CHUMBY
+    char cmd[256];
+    int i;
     //chumby - need two, first for year, then for seconds.
     sprintf( cmd, "date -u -s 20%02d%02d%02d%02d%02d", gpst[cidx].yr,gpst[cidx].mo,gpst[cidx].dy,
 	     gpst[cidx].hr,gpst[cidx].mn);
@@ -227,6 +208,8 @@ static void writelock()
 #endif
 
 #ifdef NOKIAN810
+    char cmd[256];
+    int i;
     // nokia
     if (!access("/mnt/initfs/usr/bin/retutime", F_OK)) {
         sprintf(cmd, "sudo /usr/sbin/chroot /mnt/initfs /usr/bin/retutime -T 20%02d-%02d-%02d/%02d:%02d:%02d",
@@ -336,7 +319,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
             gpst[cidx].yr = get2(&field[9][4]);
 
             // this will be slightly late
-            if (!firslock)
+            if (!firstlock)
                 writelock();
         }
     }
@@ -509,11 +492,16 @@ int getgpsinfo(int chan, char *buf, int msclock)
         return 1;
     // within 24 hours, only when gpst[cidx].lock since two unlocked GPS can have different times
     // only when sc < 30 to avoid bestgps jitter (5:00->4:59) causing a hiccup
-    if (kmlinterval && gpst[cidx].lock && gpst[cidx].sc < 30 && kmmn != (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval) {
+    if (firstlock == 1 || (kmlinterval && gpst[cidx].lock && gpst[cidx].sc < 30 && kmmn != (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval)) {
+	firstlock = 2;
         kmmn = (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval;
         rotatekml();
-        logfd = fopen("current.kml", "w+b");
+
+	sprintf( currkml, "%02d%02d%02d%02d%02d%02d.kml", 
+		 gpst[cidx].yr, gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
+        logfd = fopen(currkml, "w+b");
         if (logfd) {
+	    symlink( currkml, "current.kml" );
             fprintf(logfd, kmlhead, kmlname, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000),
               gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gtrk / 1000, gpst[cidx].gtrk % 1000);
             fflush(logfd);
@@ -527,14 +515,10 @@ int getgpsinfo(int chan, char *buf, int msclock)
     if (kmlsc != gpst[cidx].sc) {
         if (!kmlinterval || !logfd)
             return 1;
-
         kmlsc = gpst[cidx].sc;
-
-        //sprint then fputs in dokmltail to make it a unitary write
-        //(otherwise current.kml may be read as a partial)
-        sprintf(&kmlstr[kmlful], pmarkfmt, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000), gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gspd / 1000, gpst[cidx].gspd % 1000,        // first and last
+        sprintf(&kmlstr[kmlful], pmarkfmt, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000), gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gspd / 1000, gpst[cidx].gspd % 1000,        // last point this second, first point next below.
           gpst[cidx].yr, gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
-        kmlful = strlen(kmlstr);
+	kmlful = strlen(kmlstr);
     }
 
     kmscth = gpst[cidx].scth;

@@ -18,7 +18,7 @@ var red = '#f00'
 var yellow = '#ff0'
 var green = '#0f0'
 
-function dodraw() {
+function startup() {
     if( ua.search("kindle") > -1 ) {
 	black = "#fff"
 	white = "#000"
@@ -35,10 +35,10 @@ function dodraw() {
     canv.canvas.height = ht
     mx = ht;
     if( wd < mx )
-      mx = wd;
+	mx = wd;
     canv.fillStyle = black
     canv.fillRect(0,0, wd,ht)
-    xh=new XMLHttpRequest()
+    xh = new XMLHttpRequest()
     setTimeout(update, 100)
 }
 
@@ -50,149 +50,126 @@ function update() {
         mx = ht;
         if( wd < mx )
             mx = wd;
-        canv.canvas.width = wd
-        canv.canvas.height = ht
+	canv.canvas.width = wd
+	canv.canvas.height = ht
     }
-
-    xh.open("GET","hogstat.json", false)
-    xh.send()
-    hog = eval('('+xh.responseText+')', null)
-
-    canv.fillStyle = black
-    canv.fillRect(0, 0, wd,ht)
-
     r = mx/2
-    canv.lineWidth = r/50
-    canv.strokeWidth = r/50
+    try {
+	xh.open("GET","hogstat.json", false)
+	xh.send()
+	hog = eval('('+xh.responseText+')', null)
 
-    canv.strokeStyle = yellow
-    canv.beginPath()
-    canv.moveTo(19*r/10,r)
-    canv.arc(r,r,9*r/10,0,Math.PI,true)
-    canv.lineTo(19*r/10,r)
-    canv.stroke()
+	canv.fillStyle = black
+	canv.fillRect(0, 0, wd,ht)
 
-    canv.strokeStyle = red
-    canv.beginPath()
-    canv.moveTo(19*r/10,19*r/10)
-    canv.arc(r,19*r/10,9*r/10,0,Math.PI,true)
-    canv.lineTo(19*r/10,19*r/10)
-    canv.stroke()
+	canv.lineWidth = r/50
+	canv.strokeWidth = r/50
 
-    canv.lineWidth = r*4/10
-    canv.strokeWidth = r*4/10
-
-    canv.strokeStyle = yellow
-    canv.beginPath()
-    canv.arc(r,r,7*r/10,Math.PI, Math.PI*(1+hog.speed/120000),false)
-    canv.stroke()
-
-    canv.strokeStyle = green
-    canv.beginPath()
-    canv.arc(r,19*r/10,7*r/10,Math.PI, Math.PI*(1+hog.rpm/8000000),false)
-    canv.stroke()
-
-    canv.fillStyle = green
-    if( hog.turn & 1 ) {
-	canv.beginPath()
-	canv.moveTo(19*r/10,3*r/10)
-	canv.lineTo(17*r/10,2*r/10)
-	canv.lineTo(17*r/10,4*r/10)
-	canv.lineTo(19*r/10,3*r/10)
-	canv.fill()
-    }
-    if( hog.turn & 2 ) {
-	canv.beginPath()
-	canv.moveTo(r/10,3*r/10)
-	canv.lineTo(3*r/10,2*r/10)
-	canv.lineTo(3*r/10,4*r/10)
-	canv.lineTo(r/10,3*r/10)
-	canv.fill()
-    }
-
-    canv.lineWidth = r/50
-    canv.strokeWidth = r/50
-
-    if( hog.full > 6 )
-	hog.full = 6;
-    if( hog.full > 2 ) {
-	canv.fillStyle = green
-	canv.strokeStyle = green
-    }
-    else if( hog.full > 1 ) {
-	canv.fillStyle = yellow
 	canv.strokeStyle = yellow
-    }
-    else {
-	canv.fillStyle = red
+	canv.beginPath()
+	canv.moveTo(19*r/10,r)
+	canv.arc(r,r,9*r/10,0,Math.PI,true)
+	canv.lineTo(19*r/10,r)
+	canv.stroke()
+
 	canv.strokeStyle = red
+	canv.beginPath()
+	canv.moveTo(19*r/10,19*r/10)
+	canv.arc(r,19*r/10,9*r/10,0,Math.PI,true)
+	canv.lineTo(19*r/10,19*r/10)
+	canv.stroke()
+
+	canv.lineWidth = r*4/10
+	canv.strokeWidth = r*4/10
+
+	canv.strokeStyle = yellow
+	canv.beginPath()
+	canv.arc(r,r,7*r/10,Math.PI, Math.PI*(1+hog.speed/120000),false)
+	canv.stroke()
+
+	canv.strokeStyle = green
+	canv.beginPath()
+	canv.arc(r,19*r/10,7*r/10,Math.PI, Math.PI*(1+hog.rpm/8000000),false)
+	canv.stroke()
+
+	canv.fillStyle = green
+	if( hog.turn & 1 ) {
+	    canv.beginPath()
+	    canv.moveTo(19*r/10,3*r/10)
+	    canv.lineTo(17*r/10,2*r/10)
+	    canv.lineTo(17*r/10,4*r/10)
+	    canv.lineTo(19*r/10,3*r/10)
+	    canv.fill()
+	}
+	if( hog.turn & 2 ) {
+	    canv.beginPath()
+	    canv.moveTo(r/10,3*r/10)
+	    canv.lineTo(3*r/10,2*r/10)
+	    canv.lineTo(3*r/10,4*r/10)
+	    canv.lineTo(r/10,3*r/10)
+	    canv.fill()
+	}
+
+	canv.lineWidth = r/50
+	canv.strokeWidth = r/50
+
+	canv.textAlign="center"
+	canv.textBaseline="middle"
+	canv.lineWidth = r/50
+	canv.strokeWidth = r/50
+
+	v = r / 3
+	canv.font = v +"px sans-serif"
+	canv.fillStyle = white
+
+	canv.fillText(hog.rpm/1000, r,19*r/10-v/2)
+	canv.fillText(Math.round(hog.speed/1000), r,r-v/2)
+
+	// clutch - neutral - gear
+	if( hog.gear == -1 )
+	    hog.gear = 0;
+	if( hog.neutral ) {
+	    if( hog.clutch )
+		canv.fillStyle = green
+	    else
+		canv.fillStyle = yellow
+	    canv.fillText("N", r/5,r+v/2)
+	}
+	else {
+	    if( hog.clutch )
+		canv.fillStyle = yellow //'#f80'
+	    else
+		canv.fillStyle = white
+	    canv.fillText(hog.gear, r/5,r+v/2)
+	}
+
+	v = r / 5
+	canv.font = v +"px sans-serif"
+	canv.fillStyle = white
+	canv.fillText(hog.temp , 3*r/10, v)
+	canv.fillText(hog.full, 9*r/5,r+v/2)
+
+	v = r / 10
+	canv.font = v +"px sans-serif"
+	canv.fillStyle = white
+	canv.fillText(hog.odo+" ODO", r/2, 2*r)
+	canv.fillText(hog.fuel+" FUEL", 3*r/2, 2*r)
+
+	setTimeout(update, 50)
     }
-    canv.beginPath()
-    canv.moveTo(19*r/10,12*r/10)
-    canv.lineTo(17*r/10,12*r/10)
-    canv.lineTo(17*r/10,r)
-    canv.lineTo(19*r/10,r)
-    canv.lineTo(19*r/10,12*r/10)
-    canv.stroke()
-
-    full = ((6 - hog.full) / 3.0 + 10) * r / 10
-    canv.beginPath()
-    canv.moveTo(19*r/10,12*r/10)
-    canv.lineTo(17*r/10,12*r/10)
-    canv.lineTo(17*r/10,full)
-    canv.lineTo(19*r/10,full)
-    canv.lineTo(19*r/10,12*r/10)
-    canv.fill()
-
-    canv.textAlign="center"
-    canv.textBaseline="middle"
-    canv.lineWidth = r/50
-    canv.strokeWidth = r/50
-
-    v = r / 3
-    canv.font = v +"px sans-serif"
-    canv.fillStyle = white
-
-    canv.fillText(hog.full, 9*r/5,r+v/2)
-
-    canv.fillText(hog.rpm/1000, r,19*r/10-v/2)
-    canv.fillText(Math.round(hog.speed/1000), r,r-v/2)
-
-// clutch - neutral - gear
-    if( hog.gear == -1 )
-	hog.gear = 0;
-    if( hog.neutral ) {
-	if( hog.clutch )
-	    canv.fillStyle = green
-	else
-	    canv.fillStyle = yellow
-	canv.fillText("N", r/5,r+v/2)
+    catch (e) {
+	v = r / 10
+	canv.clearRect(0,0,wd,ht)
+	canv.font = v +"px sans-serif"
+	canv.fillStyle = "#888"
+	canv.fillText(e.name, r/10, r/10)
+	canv.fillText(e.message, r/10, r/5)
+	setTimeout(update, 10000)
     }
-    else {
-	if( hog.clutch )
-	    canv.fillStyle = yellow //'#f80'
-	else
-	    canv.fillStyle = white
-	canv.fillText(hog.gear, r/5,r+v/2)
-    }
-
-    v = r / 5
-    canv.font = v +"px sans-serif"
-    canv.fillStyle = white
-    canv.fillText(hog.temp , 3*r/10, v)
-
-
-    v = r / 10
-    canv.font = v +"px sans-serif"
-    canv.fillStyle = '#fff'
-    canv.fillText(hog.odo+" ODO", r/2, 2*r)
-    canv.fillText(hog.fuel+" FUEL", 3*r/2, 2*r)
-
-    setTimeout(update, 50)
 }
 </script>
   </head>
-  <body onload="dodraw()">
+  <body onload="startup()">
     <div width: 100%; height: 100%; margin: 0px>
       <a href=/><canvas id="myCanvas">No Canvas.</a>
     </div>

@@ -67,6 +67,8 @@ void calchog(char *outb, int mstime)
 	c++;
     }
     *d++ = 0;
+    if( strlen(d) < 10 )
+	return;
 #if 0
     // obdpros
     i = sscanf(inb, "%02x %02x %02x %02x %02x %02x %02x %02x",

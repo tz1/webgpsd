@@ -74,7 +74,6 @@ extern int thisms;
 
 //commons
 extern FILE *errfd;
-extern FILE *logfd;
 extern char *xbuf;
 
 //configs
@@ -88,7 +87,8 @@ int getgpsinfo(int fd, char *, int);
 void findbestgps(void);
 
 //web subfunctions
-int dowebget(void);
+int dowebget(char *);
 
 //misc
 void rotatekml(void);
+void prelog(void);
