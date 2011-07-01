@@ -125,8 +125,9 @@ static char kmlstr[BUFLEN];
 static int kmlful = 0;
 static FILE *logfd = NULL;
 
+char currkml[64]="000000prlk.kml";
 void prelog() {
-    logfd = fopen("prlock.kml", "w+b");
+    logfd = fopen(currkml, "w+b");
 }
 
 static int firstlock = 0;
@@ -166,7 +167,6 @@ static void kmzip(char *fname)
     }
 }
 
-char currkml[64]="prlock.kml";
 void rotatekml()
 {
     if (logfd) {
@@ -501,7 +501,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
 		 gpst[cidx].yr, gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
         logfd = fopen(currkml, "w+b");
         if (logfd) {
-	    symlink( currkml, "current.kml" );
+	    symlink( currkml, "current.kml" ); // this will fail on FAT
             fprintf(logfd, kmlhead, kmlname, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000),
               gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gtrk / 1000, gpst[cidx].gtrk % 1000);
             fflush(logfd);

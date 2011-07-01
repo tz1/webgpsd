@@ -67,7 +67,7 @@ void calchog(char *outb, int mstime)
 	c++;
     }
     *d++ = 0;
-    if( strlen(d) < 10 )
+    if( strlen(inb) < 10 )
 	return;
 #if 0
     // obdpros
