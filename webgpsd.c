@@ -623,6 +623,7 @@ extern char *radfmt;
 //			    lastharley = 100;
 			    extern void calchog(char *, int);
 			    char jbuf[256]; // calchog alters buffer, so use local copy
+			    strncpy(jbuf,bp,150);
 			    char *c = strchr( jbuf+10, ':' ); // bypass timestamp
 			    if( !c )
 				continue;
