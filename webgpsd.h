@@ -48,13 +48,14 @@ struct gpsstate {
     struct satinfo lsats[32];
 };
 
+#define MAXSAT 256
 struct gpssats {
     int psatset;
     int lsatset;
     int pnsats, pnused;
     int lnsats, lnused;
-    int used[100], view[100]; // list of used, inview
-    int el[100], az[100], sn[100];
+    int used[MAXSAT], view[MAXSAT]; // list of used, inview
+    int el[MAXSAT], az[MAXSAT], sn[MAXSAT];
 };
 #ifdef HARLEY
 struct harley {

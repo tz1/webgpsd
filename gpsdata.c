@@ -125,8 +125,9 @@ static char kmlstr[BUFLEN];
 static int kmlful = 0;
 static FILE *logfd = NULL;
 
-char currkml[64]="000000prlk.kml";
-void prelog() {
+char currkml[64] = "000000prlk.kml";
+void prelog()
+{
     logfd = fopen(currkml, "w+b");
 }
 
@@ -134,11 +135,11 @@ static int firstlock = 0;
 // append data, close KML, and rewind redy for next data
 static void dokmltail()
 {
-    if( logfd ) {
-	strcpy(&kmlstr[kmlful], kmltail);
-	fputs(kmlstr, logfd);
-	fflush(logfd);
-	fseek(logfd, -strlen(kmltail), SEEK_CUR);
+    if (logfd) {
+        strcpy(&kmlstr[kmlful], kmltail);
+        fputs(kmlstr, logfd);
+        fflush(logfd);
+        fseek(logfd, -strlen(kmltail), SEEK_CUR);
     }
     kmlful = 0;
     kmlstr[0] = 0;
@@ -159,7 +160,7 @@ static void kmzip(char *fname)
 {
     fprintf(errfd, "Zipping %s\n", fname);
     if (!fork()) {
-	cmdname = "wgl2z"; 
+        cmdname = "wgl2z";
         int k, n = getdtablesize();
         for (k = 3; k < n; k++)
             close(k);
@@ -171,11 +172,11 @@ void rotatekml()
 {
     if (logfd) {
         dokmltail();            // write out anything remaining in buffer
-	fclose(logfd);
+        fclose(logfd);
     }
-    kmzip( currkml );
-    unlink( "current.kml" );
-    strcpy( currkml, "currtmp.kml" );
+    kmzip(currkml);
+    unlink("current.kml");
+    strcpy(currkml, "currtmp.kml");
 }
 
 // sync internal lock on first lock
@@ -187,24 +188,22 @@ static void writelock()
     char cmd[256];
     int i;
     // set system clock - linux generic
-    sprintf( cmd, "sudo date -u -s %02d/%02d/20%02d", gpst[cidx].mo,gpst[cidx].dy,gpst[cidx].yr );
-    sprintf( cmd, "sudo date -u -s %02d:%02d:%02d", gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
-    sprintf( cmd, "sudo hwclock --systohc" );
+    sprintf(cmd, "sudo date -u -s %02d/%02d/20%02d", gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].yr);
+    sprintf(cmd, "sudo date -u -s %02d:%02d:%02d", gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
+    sprintf(cmd, "sudo hwclock --systohc");
     i = system(cmd);
-    fprintf( errfd, "Set Time %d=%s\n", i, cmd );
+    fprintf(errfd, "Set Time %d=%s\n", i, cmd);
 #endif
 
 #ifdef CHUMBY
     char cmd[256];
     int i;
     //chumby - need two, first for year, then for seconds.
-    sprintf( cmd, "date -u -s 20%02d%02d%02d%02d%02d", gpst[cidx].yr,gpst[cidx].mo,gpst[cidx].dy,
-	     gpst[cidx].hr,gpst[cidx].mn);
-    sprintf( cmd, "date -u -s %02d%02d%02d%02d.%02d", gpst[cidx].mo,gpst[cidx].dy,
-	     gpst[cidx].hr,gpst[cidx].mn,gpst[cidx].sc );
-    sprintf( cmd, "hwclock -wu" );
+    sprintf(cmd, "date -u -s 20%02d%02d%02d%02d%02d", gpst[cidx].yr, gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn);
+    sprintf(cmd, "date -u -s %02d%02d%02d%02d.%02d", gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
+    sprintf(cmd, "hwclock -wu");
     i = system(cmd);
-    fprintf( errfd, "Set Time %d=%s\n", i, cmd );
+    fprintf(errfd, "Set Time %d=%s\n", i, cmd);
 #endif
 
 #ifdef NOKIAN810
@@ -304,8 +303,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
             if (gpst[cidx].lock)
                 gpst[cidx].lock = 0;
             return 1;
-        }
-        else {
+        } else {
             if (!gpst[cidx].lock)
                 gpst[cidx].lock = 1;
             gethms(1);
@@ -322,8 +320,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
             if (!firstlock)
                 writelock();
         }
-    }
-    else if (fmax == 15 && (!strcmp(field[0], "GGA") || !strcmp(field[0], "GNS"))) {
+    } else if (fmax == 15 && (!strcmp(field[0], "GGA") || !strcmp(field[0], "GNS"))) {
         i = field[6][0] - '0';
         // was gpst[cidx].lock, but it would prevent GPRMC alt
         if (!i)
@@ -377,8 +374,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
             gpsat[cidx].pnsats = getndp(field[3], 0);
             gpsat[cidx].psatset &= (1 << tot) - 1;
             gpsat[cidx].psatset &= ~(1 << (seq - 1));
-        }
-        else {
+        } else {
             if (seq == 1)
                 for (j = 65; j < 100; j++)
                     gpsat[cidx].view[j] = 0;
@@ -391,8 +387,10 @@ int getgpsinfo(int chan, char *buf, int msclock)
             i = getndp(field[j], 0);
             if (!i)
                 break;
-	    if( i > 119 ) // WAAS,EGNOS high numbering
-	      i -= 87;
+            if (i > 119)        // WAAS,EGNOS high numbering
+                i -= 87;
+            if (i > 100)
+                i -= 46; //QZSS will be 60..64
             gpsat[cidx].view[i] = 1;
             gpsat[cidx].el[i] = getndp(field[j + 1], 0);
             gpsat[cidx].az[i] = getndp(field[j + 2], 0);
@@ -412,8 +410,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
                     if (gpsat[cidx].used[n]) {
                         gpst[cidx].pnused++;
                         gpst[cidx].psats[k].num = -n;
-                    }
-                    else
+                    } else
                         gpst[cidx].psats[k].num = n;
                 }
             }
@@ -432,22 +429,20 @@ int getgpsinfo(int chan, char *buf, int msclock)
                     if (gpsat[cidx].used[n]) {
                         gpst[cidx].lnused++;
                         gpst[cidx].lsats[k].num = -n;
-                    }
-                    else
+                    } else
                         gpst[cidx].lsats[k].num = n;
                 }
             }
         }
-    }
-    else if (fmax == 18 && !strcmp(field[0], "GSA")) {
+    } else if (fmax == 18 && !strcmp(field[0], "GSA")) {
         gpst[cidx].fix = getndp(field[2], 0);
         gpst[cidx].pdop = getndp(field[15], 3);
         gpst[cidx].hdop = getndp(field[16], 3);
         gpst[cidx].vdop = getndp(field[17], 3);
 
         int j = getndp(field[3], 0);
-	if( j > 119 )
-	    j -= 87;
+        if (j > 119)
+            j -= 87;
         if (j && j < 65) {
             gpsat[cidx].psatset = 255;
             for (i = 0; i < 65; i++)
@@ -455,8 +450,8 @@ int getgpsinfo(int chan, char *buf, int msclock)
             gpsat[cidx].pnused = 0;
             for (i = 3; i < 15; i++) {
                 int k = getndp(field[i], 0);
-		if( k > 119 )
-		  k -= 87;
+                if (k > 119)
+                    k -= 87;
                 if (k) {
                     gpsat[cidx].used[k]++;
                     gpsat[cidx].pnused++;
@@ -471,8 +466,8 @@ int getgpsinfo(int chan, char *buf, int msclock)
             gpsat[cidx].lnused = 0;
             for (i = 3; i < 15; i++) {
                 int k = getndp(field[i], 0);
-		if( k > 119 )
-		  k -= 87;
+                if (k > 119)
+                    k -= 87;
                 if (k) {
                     gpsat[cidx].used[k]++;
                     gpsat[cidx].lnused++;
@@ -492,16 +487,17 @@ int getgpsinfo(int chan, char *buf, int msclock)
         return 1;
     // within 24 hours, only when gpst[cidx].lock since two unlocked GPS can have different times
     // only when sc < 30 to avoid bestgps jitter (5:00->4:59) causing a hiccup
-    if (firstlock == 1 || (kmlinterval && gpst[cidx].lock && gpst[cidx].sc < 30 && kmmn != (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval)) {
-	firstlock = 2;
+    if (firstlock == 1 || (kmlinterval && gpst[cidx].lock && gpst[cidx].sc < 30
+        && kmmn != (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval)) {
+        firstlock = 2;
         kmmn = (gpst[cidx].hr * 60 + gpst[cidx].mn) / kmlinterval;
         rotatekml();
 
-	sprintf( currkml, "%02d%02d%02d%02d%02d%02d.kml", 
-		 gpst[cidx].yr, gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
+        sprintf(currkml, "%02d%02d%02d%02d%02d%02d.kml",
+          gpst[cidx].yr, gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
         logfd = fopen(currkml, "w+b");
         if (logfd) {
-	    symlink( currkml, "current.kml" ); // this will fail on FAT
+            symlink(currkml, "current.kml");    // this will fail on FAT
             fprintf(logfd, kmlhead, kmlname, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000),
               gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gtrk / 1000, gpst[cidx].gtrk % 1000);
             fflush(logfd);
@@ -518,7 +514,7 @@ int getgpsinfo(int chan, char *buf, int msclock)
         kmlsc = gpst[cidx].sc;
         sprintf(&kmlstr[kmlful], pmarkfmt, gpst[cidx].llon / 1000000, abs(gpst[cidx].llon % 1000000), gpst[cidx].llat / 1000000, abs(gpst[cidx].llat % 1000000), gpst[cidx].gspd / 1000, gpst[cidx].gspd % 1000,        // last point this second, first point next below.
           gpst[cidx].yr, gpst[cidx].mo, gpst[cidx].dy, gpst[cidx].hr, gpst[cidx].mn, gpst[cidx].sc);
-	kmlful = strlen(kmlstr);
+        kmlful = strlen(kmlstr);
     }
 
     kmscth = gpst[cidx].scth;

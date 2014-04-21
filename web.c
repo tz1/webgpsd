@@ -48,17 +48,17 @@ static void doxml()
     sprintf(xbuf, xmldata, gpst[bestgps].llat / 1000000, abs(gpst[bestgps].llat % 1000000),
       gpst[bestgps].llon / 1000000, abs(gpst[bestgps].llon % 1000000));
 }
+
 #ifdef HARLEY
 
 extern struct harley hstat;
 // JSON for web - generally NOT gpsd-ng (that will go into the mainline)
-static const char hogdata[] =
-    "{rpm:%d,speed:%d,full:%d,gear:%d,clutch:%d,neutral:%d,temp:%d,turn:%d,odo:%d,fuel:%d}\r\n";
+static const char hogdata[] = "{rpm:%d,speed:%d,full:%d,gear:%d,clutch:%d,neutral:%d,temp:%d,turn:%d,odo:%d,fuel:%d}\r\n";
 static void dohog()
 {
     sprintf(xbuf, hogdata,
-	    hstat.rpm, hstat.vspd, hstat.full, hstat.gear, hstat.clutch, hstat.neutral,
-	    hstat.engtemp, hstat.turnsig, hstat.odoaccum, hstat.fuelaccum);
+      hstat.rpm, hstat.vspd, hstat.full, hstat.gear, hstat.clutch, hstat.neutral,
+      hstat.engtemp, hstat.turnsig, hstat.odoaccum, hstat.fuelaccum);
 }
 #endif
 // JSON for web - generally NOT gpsd-ng (that will go into the mainline)
@@ -75,9 +75,9 @@ static void dojson()
       gpst[bestgps].vdop / 1000, gpst[bestgps].vdop % 1000 / 10,
       gpst[bestgps].gtrk / 1000, gpst[bestgps].gtrk % 1000,
       spd / 1000, spd % 1000, gpst[bestgps].fix, gpst[bestgps].lock, gpst[bestgps].pnsats + gpst[bestgps].lnsats);
-    if( bestgps < 0 || ( !gpst[bestgps].pnsats && ! gpst[bestgps].lnsats)) {
-	 strcat(xbuf, "]}\r\n");
-	 return;
+    if (bestgps < 0 || (!gpst[bestgps].pnsats && !gpst[bestgps].lnsats)) {
+        strcat(xbuf, "]}\r\n");
+        return;
     }
     int n;
     char cbuf[128];
@@ -133,6 +133,7 @@ static void dojson()
     strcat(xbuf, "]}\r\n");
 
 }
+
 #if 0
 // JSON gpsd-ng watch format
 char ngsjson0[] = "{\"class\":\"SKY\",\"tag\":\"GSV\",\"vdop\":%d.%02d,\"hdop\":%d.%02d,\"pdop\":%d.%02d,\"satellites\":[";
@@ -204,7 +205,7 @@ static void dorad(int size, int picwidth, int picheight)
 }
 
 // Standard gps view - menu plus gps source status
-static const char gpspage1[] =        // menu
+static const char gpspage1[] =  // menu
   "<HEAD><TITLE>%s</TITLE><meta http-equiv=\"refresh\" content=\"5\">"
   "<meta name = \"viewport\" content = \"width = 480\">"
   "<style type=\"text/css\">table a {display: block; width: 100%%; height: 100%%}</style>"
@@ -213,10 +214,9 @@ static const char gpspage1[] =        // menu
   "\n<table border=1>"
   "<tr><td><a href=%s/dogmap.html><h1>MAP<br><br></a>"
   "<tr><td><a href=%s/hogstat.html><h1>HOG<br><br></a>"
-  "<tr><td><a href=%s/satstat.html><h1>SatStat<br><br></a>"
-  "<tr><td><a href=%s/radar20.html><h1>RADAR<br><br></a>" "</table>\n";
+  "<tr><td><a href=%s/satstat.html><h1>SatStat<br><br></a>" "<tr><td><a href=%s/radar20.html><h1>RADAR<br><br></a>" "</table>\n";
 
-static const char gpspage2[] =        // source status
+static const char gpspage2[] =  // source status
   "<td>\n<table border=%d><tr><td>"
   "%02d-%02d-%02d %02d:%02d:%02d<tr><td>"
   "lat=%d.%06d<tr><td>lon=%d.%06d<tr><td>"
@@ -226,13 +226,13 @@ static const char gpspage2[] =        // source status
   "trk=%d.%03d<tr><td>" "PDoP=%d.%02d<tr><td>" "HDoP=%d.%02d<tr><td>" "VDoP=%d.%02d</table>\n"
   "<td>\n<table border=%d><tr><th>PRN<th>Elev<th>Azim<th>Sgnl<th>Usd</tr>";
 
-static const char gpspage9[] =        // closing
+static const char gpspage9[] =  // closing
   "</table>\n</BODY></HTML>";
 
-static void doweb(char * addr)
+static void doweb(char *addr)
 {
     char *c;
-    int i,n;
+    int i, n;
     c = strchr(xbuf, '&');
     if (!c)
         c = "";
@@ -250,21 +250,15 @@ static void doweb(char * addr)
           , gpst[i].gspd / 1000, gpst[i].gspd % 1000, gpst[i].gtrk / 1000, gpst[i].gtrk % 1000,
           gpst[i].pdop / 1000, gpst[i].pdop % 1000 / 10, gpst[i].hdop / 1000, gpst[i].hdop % 1000 / 10,
           gpst[i].vdop / 1000, gpst[i].vdop % 1000 / 10, i == bestgps ? 3 : 1);
-	// sats
-	for (n = 0; n < gpst[i].pnsats; n++) 
-	  sprintf(&xbuf[strlen(xbuf)], "<tr><td>%d<td>%d<td>%d<td>%d<td>%c</tr>\n",
-		  abs(gpst[i].psats[n].num),
-		  gpst[i].psats[n].el,
-		  gpst[i].psats[n].az,
-		  gpst[i].psats[n].sn,
-		  gpst[i].psats[n].num < 0 ?'*':' ');
-	for (n = 0; n < gpst[i].lnsats; n++) 
-	  sprintf(&xbuf[strlen(xbuf)], "<tr><td>%d<td>%d<td>%d<td>%d<td>%c</tr>\n",
-		  abs(gpst[i].lsats[n].num),
-		  gpst[i].lsats[n].el,
-		  gpst[i].lsats[n].az,
-		  gpst[i].lsats[n].sn,
-		  gpst[i].lsats[n].num < 0 ?'*':' ');
+        // sats
+        for (n = 0; n < gpst[i].pnsats; n++)
+            sprintf(&xbuf[strlen(xbuf)], "<tr><td>%d<td>%d<td>%d<td>%d<td>%c</tr>\n",
+              abs(gpst[i].psats[n].num),
+              gpst[i].psats[n].el, gpst[i].psats[n].az, gpst[i].psats[n].sn, gpst[i].psats[n].num < 0 ? '*' : ' ');
+        for (n = 0; n < gpst[i].lnsats; n++)
+            sprintf(&xbuf[strlen(xbuf)], "<tr><td>%d<td>%d<td>%d<td>%d<td>%c</tr>\n",
+              abs(gpst[i].lsats[n].num),
+              gpst[i].lsats[n].el, gpst[i].lsats[n].az, gpst[i].lsats[n].sn, gpst[i].lsats[n].num < 0 ? '*' : ' ');
         sprintf(&xbuf[strlen(xbuf)], "</table>\n</td>\n");
     }
 
@@ -272,7 +266,7 @@ static void doweb(char * addr)
 }
 
 // really primitive parser
-int dowebget(char * webaddr)
+int dowebget(char *webaddr)
 {
     char *c;
     if (strstr(xbuf, "gpsdata") && strstr(xbuf, ".kml "))
@@ -296,38 +290,36 @@ int dowebget(char * webaddr)
             i = 20;             // miles = about 17 px per mile
         int w = 340, h = 340;
         dorad(i, w, h);
-    }
-    else {
-	extern char *webdirprefix;
-	char ibuf[256];
-	strncpy( ibuf, webdirprefix, 256 );
-	ibuf[255] = 0;
-	strcat( ibuf, "/" );
-	do {
-	    char *c = strchr( xbuf, ' ' );
-	    if( !c )
-		break;
-	    char *d = strchr( ++c, ' ' );
-	    if( !*d )
-		break;
-	    *d = 0;
-	    strcat( ibuf, c );
-	    int n = open( ibuf, O_RDONLY );
-	    if( n < 0 )
-		break;
-	    int i = lseek( n, 0, SEEK_END ); 
-	    lseek( n, 0, SEEK_SET ); 
-	    if( i > BUFSIZ )
-		break;
-	    if( i != read( n, xbuf, i ) ) {
-		close(n);
-		break;
-	    }
-	    xbuf[i] = 0;
-	    close(n);
-	    return 1;
-	} while(0);
-
+    } else {
+        extern char *webdirprefix;
+        char ibuf[256];
+        strncpy(ibuf, webdirprefix, 250);
+        ibuf[255] = 0;
+        strcat(ibuf, "/");
+        do {
+            char *c = strchr(xbuf, ' ');
+            if (!c)
+                break;
+            char *d = strchr(++c, ' ');
+            if (!*d)
+                break;
+            *d = 0;
+            strcat(ibuf, c);
+            int n = open(ibuf, O_RDONLY);
+            if (n < 0)
+                break;
+            int i = lseek(n, 0, SEEK_END);
+            lseek(n, 0, SEEK_SET);
+            if (i < 0 || i > BUFSIZ)
+                break;
+            if (i != read(n, xbuf, i)) {
+                close(n);
+                break;
+            }
+            xbuf[i] = 0;
+            close(n);
+            return 1;
+        } while (0);
         doweb(webaddr);
     }
     return 1;
